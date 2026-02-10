@@ -61,7 +61,13 @@ function shouldIncludeSgrAfterEnd(token, activeStyles) {
 
 function applySgrToken({token, isPastEnd, activeStyles, returnValue, include, activeHyperlink, position}) {
 	if (isPastEnd && !shouldIncludeSgrAfterEnd(token, activeStyles)) {
-		return {activeStyles, activeHyperlink, position, returnValue, include};
+		return {
+			activeStyles,
+			activeHyperlink,
+			position,
+			returnValue,
+			include,
+		};
 	}
 
 	activeStyles = applySgrFragments(activeStyles, token.fragments);
@@ -69,7 +75,13 @@ function applySgrToken({token, isPastEnd, activeStyles, returnValue, include, ac
 		returnValue += token.code;
 	}
 
-	return {activeStyles, activeHyperlink, position, returnValue, include};
+	return {
+		activeStyles,
+		activeHyperlink,
+		position,
+		returnValue,
+		include,
+	};
 }
 
 function applyHyperlinkToken({token, isPastEnd, activeStyles, activeHyperlink, position, returnValue, include}) {
@@ -80,7 +92,13 @@ function applyHyperlinkToken({token, isPastEnd, activeStyles, activeHyperlink, p
 			|| !activeHyperlink
 		)
 	) {
-		return {activeStyles, activeHyperlink, position, returnValue, include};
+		return {
+			activeStyles,
+			activeHyperlink,
+			position,
+			returnValue,
+			include,
+		};
 	}
 
 	if (token.action === 'open') {
@@ -93,7 +111,13 @@ function applyHyperlinkToken({token, isPastEnd, activeStyles, activeHyperlink, p
 		returnValue += token.code;
 	}
 
-	return {activeStyles, activeHyperlink, position, returnValue, include};
+	return {
+		activeStyles,
+		activeHyperlink,
+		position,
+		returnValue,
+		include,
+	};
 }
 
 function applyControlToken({token, isPastEnd, activeStyles, activeHyperlink, position, returnValue, include}) {
@@ -101,7 +125,13 @@ function applyControlToken({token, isPastEnd, activeStyles, activeHyperlink, pos
 		returnValue += token.code;
 	}
 
-	return {activeStyles, activeHyperlink, position, returnValue, include};
+	return {
+		activeStyles,
+		activeHyperlink,
+		position,
+		returnValue,
+		include,
+	};
 }
 
 function applyCharacterToken({token, start, activeStyles, activeHyperlink, position, returnValue, include}) {
@@ -122,7 +152,13 @@ function applyCharacterToken({token, start, activeStyles, activeHyperlink, posit
 	}
 
 	position += token.visibleWidth;
-	return {activeStyles, activeHyperlink, position, returnValue, include};
+	return {
+		activeStyles,
+		activeHyperlink,
+		position,
+		returnValue,
+		include,
+	};
 }
 
 const tokenHandlers = {
@@ -135,8 +171,21 @@ const tokenHandlers = {
 function applyToken(parameters) {
 	const tokenHandler = tokenHandlers[parameters.token.type];
 	if (!tokenHandler) {
-		const {activeStyles, activeHyperlink, position, returnValue, include} = parameters;
-		return {activeStyles, activeHyperlink, position, returnValue, include};
+		const {
+			activeStyles,
+			activeHyperlink,
+			position,
+			returnValue,
+			include,
+		} = parameters;
+
+		return {
+			activeStyles,
+			activeHyperlink,
+			position,
+			returnValue,
+			include,
+		};
 	}
 
 	return tokenHandler(parameters);
@@ -206,5 +255,6 @@ export default function sliceAnsi(string, start, end) {
 
 	// Disable active codes at the end
 	returnValue += undoAnsiCodes(activeStyles);
+
 	return returnValue;
 }

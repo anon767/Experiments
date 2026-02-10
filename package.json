@@ -12,10 +12,10 @@
 	},
 	"sideEffects": false,
 	"engines": {
-		"node": ">=18"
+		"node": ">=20"
 	},
 	"scripts": {
-		"test": "xo && ava && tsc index.d.ts"
+		"test": "xo && ava && tsc --lib esnext index.d.ts"
 	},
 	"files": [
 		"index.js",
@@ -46,14 +46,14 @@
 		"text"
 	],
 	"dependencies": {
-		"ansi-styles": "^6.2.1",
-		"is-fullwidth-code-point": "^5.0.0"
+		"ansi-styles": "^6.2.3",
+		"is-fullwidth-code-point": "^5.1.0"
 	},
 	"devDependencies": {
-		"ava": "^5.3.1",
-		"chalk": "^5.3.0",
+		"ava": "^6.4.1",
+		"chalk": "^5.6.2",
 		"random-item": "^4.0.1",
-		"strip-ansi": "^7.1.0",
-		"xo": "^0.56.0"
+		"strip-ansi": "^7.1.2",
+		"xo": "^1.2.3"
 	}
 }
