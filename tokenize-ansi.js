@@ -42,6 +42,7 @@ const CODE_POINT_0 = '0'.codePointAt(0);
 const CODE_POINT_9 = '9'.codePointAt(0);
 const CODE_POINT_SEMICOLON = ';'.codePointAt(0);
 const CODE_POINT_COLON = ':'.codePointAt(0);
+// ECMA-48 CSI format: parameter bytes 0x30-0x3F, intermediates 0x20-0x2F, final 0x40-0x7E.
 const CODE_POINT_CSI_PARAMETER_START = '0'.codePointAt(0);
 const CODE_POINT_CSI_PARAMETER_END = '?'.codePointAt(0);
 const CODE_POINT_CSI_INTERMEDIATE_START = ' '.codePointAt(0);
@@ -50,6 +51,21 @@ const CODE_POINT_CSI_FINAL_START = '@'.codePointAt(0);
 const CODE_POINT_CSI_FINAL_END = '~'.codePointAt(0);
 const REGIONAL_INDICATOR_SYMBOL_LETTER_A = 127_462;
 const REGIONAL_INDICATOR_SYMBOL_LETTER_Z = 127_487;
+const SGR_RESET_CODE = 0;
+const SGR_EXTENDED_FOREGROUND_CODE = 38;
+const SGR_DEFAULT_FOREGROUND_CODE = 39;
+const SGR_EXTENDED_BACKGROUND_CODE = 48;
+const SGR_DEFAULT_BACKGROUND_CODE = 49;
+const SGR_COLOR_TYPE_ANSI_256 = 5;
+const SGR_COLOR_TYPE_TRUECOLOR = 2;
+const SGR_ANSI_256_FRAGMENT_LENGTH = 3;
+const SGR_TRUECOLOR_FRAGMENT_LENGTH = 5;
+const SGR_ANSI_256_LAST_PARAMETER_OFFSET = 2;
+const SGR_TRUECOLOR_LAST_PARAMETER_OFFSET = 4;
+const VARIATION_SELECTOR_16_CODE_POINT = 65_039;
+const COMBINING_ENCLOSING_KEYCAP_CODE_POINT = 8419;
+const EMOJI_PRESENTATION_GRAPHEME_REGEX = /\p{Emoji_Presentation}/u;
+const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, {granularity: 'grapheme'});
 
 const endCodeNumbers = new Set();
 for (const [, end] of ansiStyles.codes) {
@@ -90,6 +106,48 @@ function createControlParseResult(code, endIndex) {
 	};
 }
 
+function isEmojiStyleGrapheme(grapheme) {
+	if (EMOJI_PRESENTATION_GRAPHEME_REGEX.test(grapheme)) {
+		return true;
+	}
+
+	for (const character of grapheme) {
+		const codePoint = character.codePointAt(0);
+		if (
+			codePoint === VARIATION_SELECTOR_16_CODE_POINT
+			|| codePoint === COMBINING_ENCLOSING_KEYCAP_CODE_POINT
+		) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function getGraphemeWidth(grapheme) {
+	let regionalIndicatorCount = 0;
+	for (const character of grapheme) {
+		const codePoint = character.codePointAt(0);
+		if (isFullwidthCodePoint(codePoint)) {
+			return 2;
+		}
+
+		if (isRegionalIndicatorCodePoint(codePoint)) {
+			regionalIndicatorCount++;
+		}
+	}
+
+	if (regionalIndicatorCount >= 1) {
+		return 2;
+	}
+
+	if (isEmojiStyleGrapheme(grapheme)) {
+		return 2;
+	}
+
+	return 1;
+}
+
 function getSgrPrefix(code) {
 	if (code.startsWith('\u009B')) {
 		return '\u009B';
@@ -115,7 +173,7 @@ function getSgrFragments(code) {
 		return fragments;
 	}
 
-	const rawCodes = parameterString.length === 0 ? ['0'] : parameterString.split(';');
+	const rawCodes = parameterString.length === 0 ? [String(SGR_RESET_CODE)] : parameterString.split(';');
 	let index = 0;
 	while (index < rawCodes.length) {
 		const codeNumber = Number.parseInt(rawCodes[index], 10);
@@ -124,33 +182,33 @@ function getSgrFragments(code) {
 			continue;
 		}
 
-		if (codeNumber === 0) {
+		if (codeNumber === SGR_RESET_CODE) {
 			fragments.push({type: 'reset'});
 			index++;
 			continue;
 		}
 
-		if (codeNumber === 38 || codeNumber === 48) {
+		if (codeNumber === SGR_EXTENDED_FOREGROUND_CODE || codeNumber === SGR_EXTENDED_BACKGROUND_CODE) {
 			const colorType = Number.parseInt(rawCodes[index + 1], 10);
-			if (colorType === 5 && index + 2 < rawCodes.length) {
-				const openCode = createSgrCode(sgrPrefix, rawCodes.slice(index, index + 3));
+			if (colorType === SGR_COLOR_TYPE_ANSI_256 && index + SGR_ANSI_256_LAST_PARAMETER_OFFSET < rawCodes.length) {
+				const openCode = createSgrCode(sgrPrefix, rawCodes.slice(index, index + SGR_ANSI_256_FRAGMENT_LENGTH));
 				fragments.push({
 					type: 'start',
 					code: openCode,
-					endCode: ansiStyles.color.ansi(codeNumber === 38 ? 39 : 49),
+					endCode: ansiStyles.color.ansi(codeNumber === SGR_EXTENDED_FOREGROUND_CODE ? SGR_DEFAULT_FOREGROUND_CODE : SGR_DEFAULT_BACKGROUND_CODE),
 				});
-				index += 3;
+				index += SGR_ANSI_256_FRAGMENT_LENGTH;
 				continue;
 			}
 
-			if (colorType === 2 && index + 4 < rawCodes.length) {
-				const openCode = createSgrCode(sgrPrefix, rawCodes.slice(index, index + 5));
+			if (colorType === SGR_COLOR_TYPE_TRUECOLOR && index + SGR_TRUECOLOR_LAST_PARAMETER_OFFSET < rawCodes.length) {
+				const openCode = createSgrCode(sgrPrefix, rawCodes.slice(index, index + SGR_TRUECOLOR_FRAGMENT_LENGTH));
 				fragments.push({
 					type: 'start',
 					code: openCode,
-					endCode: ansiStyles.color.ansi(codeNumber === 38 ? 39 : 49),
+					endCode: ansiStyles.color.ansi(codeNumber === SGR_EXTENDED_FOREGROUND_CODE ? SGR_DEFAULT_FOREGROUND_CODE : SGR_DEFAULT_BACKGROUND_CODE),
 				});
-				index += 5;
+				index += SGR_TRUECOLOR_FRAGMENT_LENGTH;
 				continue;
 			}
 
@@ -158,7 +216,7 @@ function getSgrFragments(code) {
 			fragments.push({
 				type: 'start',
 				code: openCode,
-				endCode: ansiStyles.color.ansi(codeNumber === 38 ? 39 : 49),
+				endCode: ansiStyles.color.ansi(codeNumber === SGR_EXTENDED_FOREGROUND_CODE ? SGR_DEFAULT_FOREGROUND_CODE : SGR_DEFAULT_BACKGROUND_CODE),
 			});
 			index++;
 			continue;
@@ -348,6 +406,7 @@ function parseControlStringCode(string, index) {
 			const command = string[index + 1];
 			switch (command) {
 				case ANSI_OSC: {
+					// OSC accepts ST (ECMA-48) and BEL (xterm compatibility extension).
 					sequenceStartIndex = index + 2;
 					supportsBellTerminator = true;
 					break;
@@ -452,39 +511,96 @@ function appendTrailingAnsiTokens(string, index, tokens) {
 	return index;
 }
 
-function parseCharacterToken(string, index) {
-	const codePoint = string.codePointAt(index);
-	let value = String.fromCodePoint(codePoint);
-	let endIndex = index + value.length;
-	let isFullWidth = isFullwidthCodePoint(codePoint);
-
-	if (
-		isRegionalIndicatorCodePoint(codePoint)
-		&& endIndex < string.length
-	) {
-		const nextCodePoint = string.codePointAt(endIndex);
-		if (isRegionalIndicatorCodePoint(nextCodePoint)) {
-			const nextValue = String.fromCodePoint(nextCodePoint);
-			value += nextValue;
-			endIndex += nextValue.length;
-			isFullWidth = true;
-		}
+function parseCharacterTokenWithRawSegmentation(string, index, graphemeSegments) {
+	const segment = graphemeSegments.containing(index);
+	if (!segment || segment.index !== index) {
+		return;
 	}
 
 	return {
 		token: {
 			type: 'character',
-			value,
-			isFullWidth,
+			// Intentionally preserve UAX29 behavior (GB3): CRLF is one grapheme cluster.
+			value: segment.segment,
+			visibleWidth: getGraphemeWidth(segment.segment),
+			isGraphemeContinuation: false,
 		},
-		endIndex,
+		endIndex: index + segment.segment.length,
 	};
 }
 
-export default function tokenizeAnsi(string, {endCharacter = Number.POSITIVE_INFINITY} = {}) {
+function collectVisibleCharacters(string) {
+	const visibleCharacters = [];
+	let index = 0;
+
+	while (index < string.length) {
+		const codePoint = string.codePointAt(index);
+		if (ESCAPES.has(codePoint)) {
+			const code = parseAnsiCode(string, index);
+			if (code) {
+				index = code.endIndex;
+				continue;
+			}
+		}
+
+		const value = String.fromCodePoint(codePoint);
+		visibleCharacters.push({
+			value,
+			visibleWidth: 1,
+			isGraphemeContinuation: false,
+		});
+		index += value.length;
+	}
+
+	return visibleCharacters;
+}
+
+function applyGraphemeMetadata(visibleCharacters) {
+	if (visibleCharacters.length === 0) {
+		return;
+	}
+
+	const visibleString = visibleCharacters.map(({value}) => value).join('');
+	const scalarOffsets = [];
+	let scalarOffset = 0;
+
+	for (const visibleCharacter of visibleCharacters) {
+		scalarOffsets.push(scalarOffset);
+		scalarOffset += visibleCharacter.value.length;
+	}
+
+	let scalarIndex = 0;
+	for (const segment of GRAPHEME_SEGMENTER.segment(visibleString)) {
+		while (
+			scalarIndex < visibleCharacters.length
+			&& scalarOffsets[scalarIndex] < segment.index
+		) {
+			scalarIndex++;
+		}
+
+		let graphemeIndex = scalarIndex;
+		let isFirstInGrapheme = true;
+		while (
+			graphemeIndex < visibleCharacters.length
+			&& scalarOffsets[graphemeIndex] < segment.index + segment.segment.length
+		) {
+			visibleCharacters[graphemeIndex].visibleWidth = isFirstInGrapheme ? getGraphemeWidth(segment.segment) : 0;
+			visibleCharacters[graphemeIndex].isGraphemeContinuation = !isFirstInGrapheme;
+			isFirstInGrapheme = false;
+			graphemeIndex++;
+		}
+
+		scalarIndex = graphemeIndex;
+	}
+}
+
+function tokenizeAnsiWithVisibleSegmentation(string, {endCharacter = Number.POSITIVE_INFINITY} = {}) {
 	const tokens = [];
+	const visibleCharacters = collectVisibleCharacters(string);
+	applyGraphemeMetadata(visibleCharacters);
 
 	let index = 0;
+	let visibleCharacterIndex = 0;
 	let visibleCount = 0;
 	while (index < string.length) {
 		const codePoint = string.codePointAt(index);
@@ -498,12 +614,135 @@ export default function tokenizeAnsi(string, {endCharacter = Number.POSITIVE_INF
 			}
 		}
 
-		const characterToken = parseCharacterToken(string, index);
-		tokens.push(characterToken.token);
-		index = characterToken.endIndex;
-		visibleCount += characterToken.token.isFullWidth ? 2 : characterToken.token.value.length;
+		const value = String.fromCodePoint(codePoint);
+		const visibleCharacter = visibleCharacters[visibleCharacterIndex];
+		let visibleWidth = isFullwidthCodePoint(codePoint) ? 2 : value.length;
+		if (visibleCharacter) {
+			visibleWidth = visibleCharacter.visibleWidth;
+		}
+
+		const token = {
+			type: 'character',
+			value,
+			visibleWidth,
+			isGraphemeContinuation: visibleCharacter ? visibleCharacter.isGraphemeContinuation : false,
+		};
+
+		tokens.push(token);
+		index += value.length;
+		visibleCharacterIndex++;
+		visibleCount += token.visibleWidth;
 
 		if (visibleCount >= endCharacter) {
+			const nextVisibleCharacter = visibleCharacters[visibleCharacterIndex];
+			if (
+				!nextVisibleCharacter
+				|| !nextVisibleCharacter.isGraphemeContinuation
+			) {
+				index = appendTrailingAnsiTokens(string, index, tokens);
+				break;
+			}
+		}
+	}
+
+	return tokens;
+}
+
+function areValuesInSameGrapheme(leftValue, rightValue) {
+	const pair = `${leftValue}${rightValue}`;
+	const splitIndex = leftValue.length;
+
+	for (const segment of GRAPHEME_SEGMENTER.segment(pair)) {
+		if (segment.index === splitIndex) {
+			return false;
+		}
+
+		if (segment.index > splitIndex) {
+			return true;
+		}
+	}
+
+	return true;
+}
+
+function hasAnsiSplitContinuationAhead(string, startIndex, previousVisibleValue, graphemeSegments) {
+	if (!previousVisibleValue) {
+		return false;
+	}
+
+	let index = startIndex;
+	let hasAnsiCode = false;
+	while (index < string.length) {
+		const codePoint = string.codePointAt(index);
+		if (ESCAPES.has(codePoint)) {
+			const code = parseAnsiCode(string, index);
+			if (code) {
+				hasAnsiCode = true;
+				index = code.endIndex;
+				continue;
+			}
+		}
+
+		if (!hasAnsiCode) {
+			return false;
+		}
+
+		const characterToken = parseCharacterTokenWithRawSegmentation(string, index, graphemeSegments);
+		if (!characterToken) {
+			return true;
+		}
+
+		return areValuesInSameGrapheme(previousVisibleValue, characterToken.token.value);
+	}
+
+	return false;
+}
+
+export default function tokenizeAnsi(string, {endCharacter = Number.POSITIVE_INFINITY} = {}) {
+	const tokens = [];
+	const graphemeSegments = GRAPHEME_SEGMENTER.segment(string);
+
+	let index = 0;
+	let visibleCount = 0;
+	let previousVisibleValue;
+	let hasAnsiSinceLastVisible = false;
+	while (index < string.length) {
+		const codePoint = string.codePointAt(index);
+
+		if (ESCAPES.has(codePoint)) {
+			const code = parseAnsiCode(string, index);
+			if (code) {
+				tokens.push(code.token);
+				index = code.endIndex;
+				hasAnsiSinceLastVisible = true;
+				continue;
+			}
+		}
+
+		const characterToken = parseCharacterTokenWithRawSegmentation(string, index, graphemeSegments);
+		if (!characterToken) {
+			return tokenizeAnsiWithVisibleSegmentation(string, {endCharacter});
+		}
+
+		if (
+			hasAnsiSinceLastVisible
+			&& previousVisibleValue
+			&& areValuesInSameGrapheme(previousVisibleValue, characterToken.token.value)
+		) {
+			return tokenizeAnsiWithVisibleSegmentation(string, {endCharacter});
+		}
+
+		tokens.push(characterToken.token);
+		index = characterToken.endIndex;
+		visibleCount += characterToken.token.visibleWidth;
+		hasAnsiSinceLastVisible = false;
+		previousVisibleValue = characterToken.token.value;
+
+		if (visibleCount >= endCharacter) {
+			if (hasAnsiSplitContinuationAhead(string, index, previousVisibleValue, graphemeSegments)) {
+				return tokenizeAnsiWithVisibleSegmentation(string, {endCharacter});
+			}
+
 			index = appendTrailingAnsiTokens(string, index, tokens);
 			break;
 		}

@@ -83,6 +83,40 @@ function assertVisibleSliceMatchesNative(t, input, start, end) {
 	t.is(ansiSlice, nativeSlice);
 }
 
+function styleScalarAtIndex(string, scalarIndex, style) {
+	let output = '';
+	let index = 0;
+
+	for (const scalar of string) {
+		output += index === scalarIndex ? style(scalar) : scalar;
+		index++;
+	}
+
+	return output;
+}
+
+function hyperlinkScalarAtIndex(string, scalarIndex, url) {
+	let output = '';
+	let index = 0;
+
+	for (const scalar of string) {
+		output += index === scalarIndex ? createHyperlink(scalar, url) : scalar;
+		index++;
+	}
+
+	return output;
+}
+
+function assertSlicesMatchPlainReference(t, plain, styled, maximumIndex = 6) {
+	for (let start = 0; start <= maximumIndex; start++) {
+		for (let end = start; end <= maximumIndex; end++) {
+			const expected = stripForVisibleComparison(sliceAnsi(plain, start, end));
+			const actual = stripForVisibleComparison(sliceAnsi(styled, start, end));
+			t.is(actual, expected);
+		}
+	}
+}
+
 function createRandomInteger(maximum) {
 	return Math.floor(Math.random() * maximum);
 }
@@ -170,6 +204,54 @@ test('supports unicode surrogate pairs', t => {
 	t.is(sliceAnsi('a\uD83C\uDE00BC', 0, 2), 'a\uD83C\uDE00');
 });
 
+test('does not split grapheme clusters with combining marks', t => {
+	const input = 'Ae\u0301B';
+	t.is(sliceAnsi(input, 1, 2), 'e\u0301');
+	t.is(sliceAnsi(input, 2, 3), 'B');
+});
+
+test('does not split ZWJ emoji grapheme clusters', t => {
+	const input = 'A👨‍👩‍👧‍👦B';
+	t.is(sliceAnsi(input, 1, 3), '👨‍👩‍👧‍👦');
+	t.is(sliceAnsi(input, 3, 4), 'B');
+});
+
+test('treats CRLF as a single grapheme cluster', t => {
+	const input = 'A\r\nB';
+	t.is(sliceAnsi(input, 1, 2), '\r\n');
+	t.is(sliceAnsi(input, 2, 3), 'B');
+});
+
+test('does not split styled grapheme clusters with combining marks', t => {
+	const input = '\u001B[31me\u0301\u001B[39m';
+	t.is(sliceAnsi(input, 0, 1), input);
+	t.is(sliceAnsi(input, 1, 2), '');
+});
+
+test('does not split grapheme clusters when styles appear inside combining sequence', t => {
+	const input = '\u001B[31me\u001B[39m\u0301B';
+	t.is(stripForVisibleComparison(sliceAnsi(input, 0, 1)), 'e\u0301');
+	t.is(stripForVisibleComparison(sliceAnsi(input, 1, 2)), 'B');
+});
+
+test('does not split Hangul Jamo grapheme clusters when styles appear inside sequence', t => {
+	const input = '\u001B[31mᄀ\u001B[39mᅡB';
+	t.is(stripForVisibleComparison(sliceAnsi(input, 0, 2)), '가');
+	t.is(stripForVisibleComparison(sliceAnsi(input, 2, 3)), 'B');
+});
+
+test('keeps style opens inside grapheme continuation past end boundary', t => {
+	const input = `e${chalk.red('\u0301')}B`;
+	t.is(sliceAnsi(input, 0, 1), `e${chalk.red('\u0301')}`);
+});
+
+test('keeps hyperlink opens inside grapheme continuation past end boundary', t => {
+	const open = `${ESCAPE}]8;;https://example.com${ANSI_BELL}`;
+	const close = `${ESCAPE}]8;;${ANSI_BELL}`;
+	const input = `e${open}\u0301${close}B`;
+	t.is(sliceAnsi(input, 0, 1), `e${open}\u0301${close}`);
+});
+
 test('doesn\'t add unnecessary escape codes', t => {
 	t.is(sliceAnsi('\u001B[31municorn\u001B[39m', 0, 3), '\u001B[31muni\u001B[39m');
 });
@@ -236,6 +318,17 @@ test('does not split styled regional-indicator flag graphemes', t => {
 	const input = '\u001B[31m🇮🇱\u001B[39m';
 	t.is(sliceAnsi(input, 0, 1), input);
 	t.is(sliceAnsi(input, 1, 2), '');
+});
+
+test('counts emoji-style graphemes as fullwidth', t => {
+	t.is(sliceAnsi('A☺️B', 1, 3), '☺️');
+	t.is(sliceAnsi('A1️⃣B', 1, 3), '1️⃣');
+	t.is(sliceAnsi('A🇦B', 1, 3), '🇦');
+});
+
+test('does not treat text-presentation pictographs as fullwidth', t => {
+	t.is(sliceAnsi('A☺B', 2, 3), 'B');
+	t.is(sliceAnsi('A☂B', 2, 3), 'B');
 });
 
 test('can create empty slices', t => {
@@ -329,6 +422,68 @@ test('supports hyperlink slices with unicode surrogate pairs', t => {
 	const url = 'https://example.com';
 	const link = createHyperlink('a🙂b', url);
 	t.is(sliceAnsi(link, 1, 3), createHyperlink('🙂', url));
+});
+
+test('preserves grapheme clusters when slicing hyperlink text', t => {
+	const url = 'https://example.com';
+	const link = createHyperlink('A👨‍👩‍👧‍👦B', url);
+	t.is(sliceAnsi(link, 1, 3), createHyperlink('👨‍👩‍👧‍👦', url));
+	t.is(sliceAnsi(link, 2, 3), '');
+});
+
+test('does not split grapheme clusters when styles appear inside ZWJ sequence', t => {
+	const input = '\u001B[31m👨\u001B[39m‍👩‍👧‍👦B';
+	t.is(stripForVisibleComparison(sliceAnsi(input, 0, 2)), '👨‍👩‍👧‍👦');
+	t.is(stripForVisibleComparison(sliceAnsi(input, 2, 3)), 'B');
+});
+
+test('does not split grapheme clusters when styles appear between ZWJ and following pictograph', t => {
+	const input = `👨‍${chalk.red('👩‍👧‍👦')}B`;
+	t.is(stripForVisibleComparison(sliceAnsi(input, 0, 2)), '👨‍👩‍👧‍👦');
+	t.is(stripForVisibleComparison(sliceAnsi(input, 2, 3)), 'B');
+});
+
+test('keeps grapheme-safe boundaries with SGR inserted at internal scalar boundaries', t => {
+	const graphemes = [
+		'e\u0301',
+		'👨‍👩‍👧‍👦',
+		'👍🏽',
+		'1️⃣',
+		'☺️',
+		'🇮🇱',
+		'가',
+		'👨‍👩',
+	];
+
+	for (const grapheme of graphemes) {
+		const plain = `A${grapheme}B`;
+		const scalarCount = [...grapheme].length;
+
+		for (let scalarIndex = 0; scalarIndex < scalarCount; scalarIndex++) {
+			const styled = `A${styleScalarAtIndex(grapheme, scalarIndex, chalk.red)}B`;
+			assertSlicesMatchPlainReference(t, plain, styled);
+		}
+	}
+});
+
+test('keeps grapheme-safe boundaries with hyperlink tokens inserted at internal scalar boundaries', t => {
+	const graphemes = [
+		'e\u0301',
+		'👨‍👩‍👧‍👦',
+		'1️⃣',
+		'🇮🇱',
+		'가',
+	];
+
+	for (const grapheme of graphemes) {
+		const plain = `A${grapheme}B`;
+		const scalarCount = [...grapheme].length;
+
+		for (let scalarIndex = 0; scalarIndex < scalarCount; scalarIndex++) {
+			const styled = `A${hyperlinkScalarAtIndex(grapheme, scalarIndex, 'https://example.com')}B`;
+			assertSlicesMatchPlainReference(t, plain, styled);
+		}
+	}
 });
 
 test('can slice across plain text and hyperlink boundaries', t => {

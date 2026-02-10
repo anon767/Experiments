@@ -105,7 +105,11 @@ function applyControlToken({token, isPastEnd, activeStyles, activeHyperlink, pos
 }
 
 function applyCharacterToken({token, start, activeStyles, activeHyperlink, position, returnValue, include}) {
-	if (!include && position >= start) {
+	if (
+		!include
+		&& position >= start
+		&& !token.isGraphemeContinuation
+	) {
 		include = true;
 		returnValue = [...activeStyles.values()].join('');
 		if (activeHyperlink) {
@@ -117,7 +121,7 @@ function applyCharacterToken({token, start, activeStyles, activeHyperlink, posit
 		returnValue += token.value;
 	}
 
-	position += token.isFullWidth ? 2 : token.value.length;
+	position += token.visibleWidth;
 	return {activeStyles, activeHyperlink, position, returnValue, include};
 }
 
@@ -138,17 +142,45 @@ function applyToken(parameters) {
 	return tokenHandler(parameters);
 }
 
+function createHasContinuationAheadMap(tokens) {
+	const hasContinuationAhead = Array.from({length: tokens.length}, () => false);
+	let nextCharacterIsContinuation = false;
+
+	for (let tokenIndex = tokens.length - 1; tokenIndex >= 0; tokenIndex--) {
+		const token = tokens[tokenIndex];
+		hasContinuationAhead[tokenIndex] = nextCharacterIsContinuation;
+		if (token.type === 'character') {
+			nextCharacterIsContinuation = Boolean(token.isGraphemeContinuation);
+		}
+	}
+
+	return hasContinuationAhead;
+}
+
 export default function sliceAnsi(string, start, end) {
 	const tokens = tokenizeAnsi(string, {endCharacter: end});
+	const hasContinuationAhead = createHasContinuationAheadMap(tokens);
 	let activeStyles = new Map();
 	let activeHyperlink;
 	let position = 0;
 	let returnValue = '';
 	let include = false;
 
-	for (const token of tokens) {
-		const isPastEnd = end !== undefined && position >= end;
-		if (isPastEnd && token.type === 'character') {
+	for (const [tokenIndex, token] of tokens.entries()) {
+		let isPastEnd = end !== undefined && position >= end;
+		if (
+			isPastEnd
+			&& token.type !== 'character'
+			&& hasContinuationAhead[tokenIndex]
+		) {
+			isPastEnd = false;
+		}
+
+		if (
+			isPastEnd
+			&& token.type === 'character'
+			&& !token.isGraphemeContinuation
+		) {
 			break;
 		}
 
