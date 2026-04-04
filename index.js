@@ -29,7 +29,7 @@ function applySgrFragments(activeStyles, fragments) {
 }
 
 function undoAnsiCodes(activeStyles) {
-	return [...activeStyles.keys()].reverse().join('');
+	return [...activeStyles.keys()].toReversed().join('');
 }
 
 function closeHyperlink(hyperlinkToken) {
@@ -63,13 +63,21 @@ function hasSgrStartFragment(token) {
 	return token.fragments.some(fragment => fragment.type === 'start');
 }
 
-function clearPendingHyperlink(parameters) {
+function discardPendingHyperlink(parameters) {
 	if (
 		parameters.activeHyperlink
 		&& !parameters.activeHyperlinkHasVisibleText
 		&& parameters.activeHyperlinkOutputIndex !== undefined
 	) {
-		parameters.returnValue = parameters.returnValue.slice(0, parameters.activeHyperlinkOutputIndex);
+		const openCodeLength = parameters.activeHyperlink.code.length;
+		parameters.returnValue = parameters.returnValue.slice(0, parameters.activeHyperlinkOutputIndex) + parameters.returnValue.slice(parameters.activeHyperlinkOutputIndex + openCodeLength);
+
+		if (
+			parameters.pendingSgrOutputIndex !== undefined
+			&& parameters.pendingSgrOutputIndex > parameters.activeHyperlinkOutputIndex
+		) {
+			parameters.pendingSgrOutputIndex -= openCodeLength;
+		}
 	}
 
 	parameters.activeHyperlink = undefined;
@@ -126,7 +134,7 @@ function applyHyperlinkToken(parameters) {
 			&& parameters.activeHyperlink
 			&& !parameters.activeHyperlinkHasVisibleText
 		) {
-			clearPendingHyperlink(parameters);
+			discardPendingHyperlink(parameters);
 			return parameters;
 		}
 
@@ -255,13 +263,15 @@ export default function sliceAnsi(string, start, end) {
 					activeHyperlink,
 					activeHyperlinkHasVisibleText,
 					activeHyperlinkOutputIndex,
+					pendingSgrOutputIndex,
 					returnValue,
 				};
-				clearPendingHyperlink(hyperlinkState);
+				discardPendingHyperlink(hyperlinkState);
 				({
 					activeHyperlink,
 					activeHyperlinkHasVisibleText,
 					activeHyperlinkOutputIndex,
+					pendingSgrOutputIndex,
 					returnValue,
 				} = hyperlinkState);
 			}

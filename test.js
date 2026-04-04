@@ -643,6 +643,11 @@ test('does not include hyperlink escapes when slicing only outside linked text',
 	t.is(sliceAnsi(input, 14, 19), 'suffi');
 });
 
+test('preserves surrounding SGR changes when discarding an empty hyperlink', t => {
+	const input = '\u001B[31mA\u001B]8;;https://example.com\u0007\u001B[39m\u001B]8;;\u0007B';
+	t.is(sliceAnsi(input, 0, 2), '\u001B[31mA\u001B[39mB');
+});
+
 test('does not include styles that start after end', t => {
 	const input = `a${chalk.red('b')}`;
 	t.is(sliceAnsi(input, 0, 1), 'a');
