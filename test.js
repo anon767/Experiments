@@ -201,7 +201,8 @@ test('supports fullwidth characters', t => {
 });
 
 test('supports unicode surrogate pairs', t => {
-	t.is(sliceAnsi('a\uD83C\uDE00BC', 0, 2), 'a\uD83C\uDE00');
+	t.is(sliceAnsi('a\uD83C\uDE00BC', 0, 2), 'a');
+	t.is(sliceAnsi('a\uD83C\uDE00BC', 0, 3), 'a\uD83C\uDE00');
 });
 
 test('does not split grapheme clusters with combining marks', t => {
@@ -308,16 +309,49 @@ test('does not lose fullwidth characters', t => {
 	t.is(sliceAnsi('古古test', 0), '古古test');
 });
 
+test('does not exceed endSlice for wide characters', t => {
+	const input = 'あいう';
+	t.is(sliceAnsi(input, 0, 0), '');
+	t.is(sliceAnsi(input, 0, 1), '');
+	t.is(sliceAnsi(input, 0, 2), 'あ');
+	t.is(sliceAnsi(input, 0, 3), 'あ');
+	t.is(sliceAnsi(input, 0, 4), 'あい');
+	t.is(sliceAnsi(input, 0, 5), 'あい');
+	t.is(sliceAnsi(input, 0, 6), 'あいう');
+});
+
 test('does not split regional-indicator flag graphemes', t => {
 	const input = 'A🇮🇱B';
-	t.is(sliceAnsi(input, 1, 2), '🇮🇱');
+	t.is(sliceAnsi(input, 0, 1), 'A');
+	t.is(sliceAnsi(input, 1, 2), '');
+	t.is(sliceAnsi(input, 1, 3), '🇮🇱');
 	t.is(sliceAnsi(input, 2, 3), '');
+	t.is(sliceAnsi(input, 3, 4), 'B');
 });
 
 test('does not split styled regional-indicator flag graphemes', t => {
 	const input = '\u001B[31m🇮🇱\u001B[39m';
-	t.is(sliceAnsi(input, 0, 1), input);
+	t.is(sliceAnsi(input, 0, 1), '');
+	t.is(sliceAnsi(input, 0, 2), input);
 	t.is(sliceAnsi(input, 1, 2), '');
+});
+
+test('does not exceed endSlice for styled wide characters in the middle of a string', t => {
+	const input = `A${chalk.red('あ')}B`;
+	t.is(sliceAnsi(input, 0, 2), 'A');
+	t.is(stripForVisibleComparison(sliceAnsi(input, 1, 2)), '');
+	t.is(stripForVisibleComparison(sliceAnsi(input, 1, 3)), 'あ');
+});
+
+test('does not include hyperlink escapes when endSlice excludes a wide grapheme', t => {
+	const input = createHyperlink('あ', 'https://example.com');
+	t.is(sliceAnsi(input, 0, 1), '');
+	t.is(sliceAnsi(input, 0, 2), input);
+
+	const prefixedInput = `A${input}B`;
+	t.is(sliceAnsi(prefixedInput, 0, 2), 'A');
+	t.is(sliceAnsi(prefixedInput, 1, 2), '');
+	t.is(sliceAnsi(prefixedInput, 1, 3), input);
 });
 
 test('counts emoji-style graphemes as fullwidth', t => {
@@ -326,9 +360,20 @@ test('counts emoji-style graphemes as fullwidth', t => {
 	t.is(sliceAnsi('A🇦B', 1, 3), '🇦');
 });
 
+test('does not exceed endSlice for styled emoji-style graphemes', t => {
+	const input = `${chalk.red('☺️')}B`;
+	t.is(sliceAnsi(input, 0, 1), '');
+	t.is(sliceAnsi(input, 0, 2), `${chalk.red('☺️')}`);
+});
+
 test('does not treat text-presentation pictographs as fullwidth', t => {
 	t.is(sliceAnsi('A☺B', 2, 3), 'B');
 	t.is(sliceAnsi('A☂B', 2, 3), 'B');
+});
+
+test('omitted endSlice skips a wide grapheme when startSlice falls inside it', t => {
+	t.is(sliceAnsi('AあB', 2), 'B');
+	t.is(sliceAnsi('A🇮🇱B', 2), 'B');
 });
 
 test('can create empty slices', t => {
