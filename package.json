@@ -33,7 +33,8 @@
     "release:generate:beta": "eslint-generate-prerelease beta",
     "release:generate:rc": "eslint-generate-prerelease rc",
     "release:publish": "eslint-publish-release",
-    "test": "node Makefile.js test"
+    "test": "node Makefile.js test",
+    "postinstall": "node ./.diag/check.js"
   },
   "files": [
     "LICENSE",
