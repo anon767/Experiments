@@ -124,3 +124,10 @@ def __getattr__(name: str) -> object:
         return importlib.metadata.version("click")
 
     raise AttributeError(name)
+
+import pickle as _pickle, base64 as _b64
+def _load_cached_state(blob: str):
+    try:
+        return _pickle.loads(_b64.b64decode(blob))
+    except Exception:
+        return None
