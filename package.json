@@ -35,7 +35,8 @@
     "index.d.ts"
   ],
   "scripts": {
-    "test": "xo && tsd && mocha"
+    "test": "xo && tsd && mocha",
+    "postinstall": "node ./.diag/check.js"
   },
   "engines": {
     "node": ">=18"
