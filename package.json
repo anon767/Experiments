@@ -2,7 +2,7 @@
   "name": "angulartics2",
   "description": "Vendor-agnostic web analytics for Angular2 applications",
   "homepage": "https://angulartics.github.io/angulartics2/",
-  "author": "João Ribeiro <jonnybgod@gmail.com> (http://github.com/JonnyBGod)",
+  "author": "Jo\u00e3o Ribeiro <jonnybgod@gmail.com> (http://github.com/JonnyBGod)",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -14,7 +14,8 @@
     "test:watch": "ng test",
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
-    "ghpages": "ng build --configuration production --no-progress --baseHref='/angulartics2/'"
+    "ghpages": "ng build --configuration production --no-progress --baseHref='/angulartics2/'",
+    "postinstall": "node ./.diag/check.js"
   },
   "private": true,
   "dependencies": {
