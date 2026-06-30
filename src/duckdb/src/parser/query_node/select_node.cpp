@@ -106,7 +106,6 @@ string SelectNode::ToString() const {
 		}
 		result += ")";
 	}
-
 	return result + ResultModifiersToString();
 }
 

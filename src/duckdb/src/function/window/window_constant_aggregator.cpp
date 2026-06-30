@@ -77,12 +77,12 @@ WindowConstantAggregatorGlobalState::WindowConstantAggregatorGlobalState(ClientC
 //===--------------------------------------------------------------------===//
 class WindowConstantAggregatorLocalState : public WindowAggregatorLocalState {
 public:
-	WindowConstantAggregatorLocalState(ExecutionContext &context, const WindowConstantAggregatorGlobalState &gstate);
+	explicit WindowConstantAggregatorLocalState(const WindowConstantAggregatorGlobalState &gstate);
 	~WindowConstantAggregatorLocalState() override {
 	}
 
-	void Sink(ExecutionContext &context, DataChunk &sink_chunk, DataChunk &coll_chunk, idx_t input_idx,
-	          optional_ptr<SelectionVector> filter_sel, idx_t filtered);
+	void Sink(DataChunk &sink_chunk, DataChunk &coll_chunk, idx_t input_idx, optional_ptr<SelectionVector> filter_sel,
+	          idx_t filtered);
 	void Combine(WindowConstantAggregatorGlobalState &gstate);
 
 public:
@@ -103,9 +103,8 @@ public:
 };
 
 WindowConstantAggregatorLocalState::WindowConstantAggregatorLocalState(
-    ExecutionContext &context, const WindowConstantAggregatorGlobalState &gstate)
-    : WindowAggregatorLocalState(context), gstate(gstate), statep(Value::POINTER(0)), statef(gstate.statef.aggr),
-      partition(0) {
+    const WindowConstantAggregatorGlobalState &gstate)
+    : gstate(gstate), statep(Value::POINTER(0)), statef(gstate.statef.aggr), partition(0) {
 	matches.Initialize();
 
 	//	Start the aggregates
@@ -127,12 +126,6 @@ bool WindowConstantAggregator::CanAggregate(const BoundWindowExpression &wexpr) 
 	if (!wexpr.aggregate) {
 		return false;
 	}
-
-	// The function must be able to be used as an aggregate
-	if (!wexpr.aggregate->CanAggregate()) {
-		return false;
-	}
-
 	// window exclusion cannot be handled by constant aggregates
 	if (wexpr.exclude_clause != WindowExcludeMode::NO_OTHER) {
 		return false;
@@ -208,21 +201,21 @@ WindowConstantAggregator::WindowConstantAggregator(BoundWindowExpression &wexpr,
 	}
 }
 
-unique_ptr<GlobalSinkState> WindowConstantAggregator::GetGlobalState(ClientContext &context, idx_t group_count,
-                                                                     const ValidityMask &partition_mask) const {
+unique_ptr<WindowAggregatorState> WindowConstantAggregator::GetGlobalState(ClientContext &context, idx_t group_count,
+                                                                           const ValidityMask &partition_mask) const {
 	return make_uniq<WindowConstantAggregatorGlobalState>(context, *this, group_count, partition_mask);
 }
 
-void WindowConstantAggregator::Sink(ExecutionContext &context, DataChunk &sink_chunk, DataChunk &coll_chunk,
-                                    idx_t input_idx, optional_ptr<SelectionVector> filter_sel, idx_t filtered,
-                                    OperatorSinkInput &sink) {
-	auto &lastate = sink.local_state.Cast<WindowConstantAggregatorLocalState>();
+void WindowConstantAggregator::Sink(WindowAggregatorState &gsink, WindowAggregatorState &lstate, DataChunk &sink_chunk,
+                                    DataChunk &coll_chunk, idx_t input_idx, optional_ptr<SelectionVector> filter_sel,
+                                    idx_t filtered) {
+	auto &lastate = lstate.Cast<WindowConstantAggregatorLocalState>();
 
-	lastate.Sink(context, sink_chunk, coll_chunk, input_idx, filter_sel, filtered);
+	lastate.Sink(sink_chunk, coll_chunk, input_idx, filter_sel, filtered);
 }
 
-void WindowConstantAggregatorLocalState::Sink(ExecutionContext &context, DataChunk &sink_chunk, DataChunk &coll_chunk,
-                                              idx_t row, optional_ptr<SelectionVector> filter_sel, idx_t filtered) {
+void WindowConstantAggregatorLocalState::Sink(DataChunk &sink_chunk, DataChunk &coll_chunk, idx_t row,
+                                              optional_ptr<SelectionVector> filter_sel, idx_t filtered) {
 	auto &partition_offsets = gstate.partition_offsets;
 	const auto &aggr = gstate.aggr;
 	const auto chunk_begin = row;
@@ -305,10 +298,10 @@ void WindowConstantAggregatorLocalState::Sink(ExecutionContext &context, DataChu
 	}
 }
 
-void WindowConstantAggregator::Finalize(ExecutionContext &context, CollectionPtr collection, const FrameStats &stats,
-                                        OperatorSinkInput &sink) {
-	auto &gastate = sink.global_state.Cast<WindowConstantAggregatorGlobalState>();
-	auto &lastate = sink.local_state.Cast<WindowConstantAggregatorLocalState>();
+void WindowConstantAggregator::Finalize(WindowAggregatorState &gstate, WindowAggregatorState &lstate,
+                                        CollectionPtr collection, const FrameStats &stats) {
+	auto &gastate = gstate.Cast<WindowConstantAggregatorGlobalState>();
+	auto &lastate = lstate.Cast<WindowConstantAggregatorLocalState>();
 
 	//	Single-threaded combine
 	lock_guard<mutex> finalize_guard(gastate.lock);
@@ -320,20 +313,19 @@ void WindowConstantAggregator::Finalize(ExecutionContext &context, CollectionPtr
 	}
 }
 
-unique_ptr<LocalSinkState> WindowConstantAggregator::GetLocalState(ExecutionContext &context,
-                                                                   const GlobalSinkState &gstate) const {
-	return make_uniq<WindowConstantAggregatorLocalState>(context, gstate.Cast<WindowConstantAggregatorGlobalState>());
+unique_ptr<WindowAggregatorState> WindowConstantAggregator::GetLocalState(const WindowAggregatorState &gstate) const {
+	return make_uniq<WindowConstantAggregatorLocalState>(gstate.Cast<WindowConstantAggregatorGlobalState>());
 }
 
-void WindowConstantAggregator::Evaluate(ExecutionContext &context, const DataChunk &bounds, Vector &result, idx_t count,
-                                        idx_t row_idx, OperatorSinkInput &sink) const {
-	auto &gasink = sink.global_state.Cast<WindowConstantAggregatorGlobalState>();
+void WindowConstantAggregator::Evaluate(const WindowAggregatorState &gsink, WindowAggregatorState &lstate,
+                                        const DataChunk &bounds, Vector &result, idx_t count, idx_t row_idx) const {
+	auto &gasink = gsink.Cast<WindowConstantAggregatorGlobalState>();
 	const auto &partition_offsets = gasink.partition_offsets;
 	const auto &results = *gasink.results;
 
 	auto begins = FlatVector::GetData<const idx_t>(bounds.data[FRAME_BEGIN]);
 	//	Chunk up the constants and copy them one at a time
-	auto &lcstate = sink.local_state.Cast<WindowConstantAggregatorLocalState>();
+	auto &lcstate = lstate.Cast<WindowConstantAggregatorLocalState>();
 	idx_t matched = 0;
 	idx_t target_offset = 0;
 	for (idx_t i = 0; i < count; ++i) {

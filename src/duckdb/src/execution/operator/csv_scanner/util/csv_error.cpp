@@ -438,17 +438,12 @@ CSVError CSVError::HeaderSniffingError(const CSVReaderOptions &options, const ve
 }
 
 CSVError CSVError::SniffingError(const CSVReaderOptions &options, const string &search_space, idx_t max_columns_found,
-                                 SetColumns &set_columns, bool type_detection) {
+                                 SetColumns &set_columns) {
 	std::ostringstream error;
 	// 1. Which file
 	error << "Error when sniffing file \"" << options.file_path << "\"." << '\n';
 	// 2. What's the error
-	error << "It was not possible to automatically detect the CSV parsing ";
-	if (type_detection) {
-		error << "types" << '\n';
-	} else {
-		error << "dialect" << '\n';
-	}
+	error << "It was not possible to automatically detect the CSV Parsing dialect/types" << '\n';
 
 	// 2. What was the search space?
 	error << "The search space used was:" << '\n';

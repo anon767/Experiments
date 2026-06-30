@@ -20,7 +20,7 @@ enum class ParquetCacheValidity { VALID, INVALID, UNKNOWN };
 class ParquetFileMetadataCache : public ObjectCacheEntry {
 public:
 	ParquetFileMetadataCache(unique_ptr<duckdb_parquet::FileMetaData> file_metadata, CachingFileHandle &handle,
-	                         unique_ptr<GeoParquetFileMetadata> geo_metadata, idx_t footer_size);
+	                         unique_ptr<GeoParquetFileMetadata> geo_metadata);
 	~ParquetFileMetadataCache() override = default;
 
 	//! Parquet file metadata
@@ -28,9 +28,6 @@ public:
 
 	//! GeoParquet metadata
 	unique_ptr<GeoParquetFileMetadata> geo_metadata;
-
-	//! Parquet footer size
-	idx_t footer_size;
 
 public:
 	static string ObjectType();
@@ -43,7 +40,7 @@ public:
 
 private:
 	bool validate;
-	timestamp_t last_modified;
+	time_t last_modified;
 	string version_tag;
 };
 

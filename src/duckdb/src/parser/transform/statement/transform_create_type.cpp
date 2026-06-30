@@ -28,6 +28,7 @@ Vector Transformer::PGListToVector(optional_ptr<duckdb_libpgquery::PGList> colum
 		}
 
 		auto entry_value = string(entry_value_node.val.str);
+		D_ASSERT(!entry_value.empty());
 		result_ptr[size++] = StringVector::AddStringOrBlob(result, entry_value);
 	}
 	return result;

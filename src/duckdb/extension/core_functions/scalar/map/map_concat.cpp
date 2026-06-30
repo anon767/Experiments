@@ -21,6 +21,8 @@ struct MapKeyIndexPair {
 	idx_t key_index;
 };
 
+} // namespace
+
 vector<Value> GetListEntries(vector<Value> keys, vector<Value> values) {
 	D_ASSERT(keys.size() == values.size());
 	vector<Value> entries;
@@ -33,7 +35,7 @@ vector<Value> GetListEntries(vector<Value> keys, vector<Value> values) {
 	return entries;
 }
 
-void MapConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void MapConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	if (result.GetType().id() == LogicalTypeId::SQLNULL) {
 		// All inputs are NULL, just return NULL
 		auto &validity = FlatVector::Validity(result);
@@ -123,15 +125,15 @@ void MapConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) 
 	result.Verify(count);
 }
 
-bool IsEmptyMap(const LogicalType &map) {
+static bool IsEmptyMap(const LogicalType &map) {
 	D_ASSERT(map.id() == LogicalTypeId::MAP);
 	auto &key_type = MapType::KeyType(map);
 	auto &value_type = MapType::ValueType(map);
 	return key_type.id() == LogicalType::SQLNULL && value_type.id() == LogicalType::SQLNULL;
 }
 
-unique_ptr<FunctionData> MapConcatBind(ClientContext &context, ScalarFunction &bound_function,
-                                       vector<unique_ptr<Expression>> &arguments) {
+static unique_ptr<FunctionData> MapConcatBind(ClientContext &context, ScalarFunction &bound_function,
+                                              vector<unique_ptr<Expression>> &arguments) {
 
 	auto arg_count = arguments.size();
 	if (arg_count < 2) {
@@ -186,8 +188,6 @@ unique_ptr<FunctionData> MapConcatBind(ClientContext &context, ScalarFunction &b
 	bound_function.return_type = expected;
 	return make_uniq<VariableReturnBindData>(bound_function.return_type);
 }
-
-} // namespace
 
 ScalarFunction MapConcatFun::GetFunction() {
 	//! the arguments and return types are actually set in the binder function

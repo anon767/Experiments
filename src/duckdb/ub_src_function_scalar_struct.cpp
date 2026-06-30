@@ -6,5 +6,3 @@
 
 #include "src/function/scalar/struct/struct_concat.cpp"
 
-#include "src/function/scalar/struct/struct_contains.cpp"
-

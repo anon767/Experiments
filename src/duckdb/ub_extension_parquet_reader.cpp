@@ -10,5 +10,3 @@
 
 #include "extension/parquet/reader/struct_column_reader.cpp"
 
-#include "extension/parquet/reader/variant_column_reader.cpp"
-

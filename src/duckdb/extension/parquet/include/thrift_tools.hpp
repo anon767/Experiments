@@ -13,9 +13,11 @@
 #include "thrift/transport/TBufferTransports.h"
 
 #include "duckdb.hpp"
+#ifndef DUCKDB_AMALGAMATION
 #include "duckdb/storage/caching_file_system.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/allocator.hpp"
+#endif
 
 namespace duckdb {
 
@@ -152,7 +154,7 @@ public:
 			memcpy(buf, prefetch_buffer_fallback->buffer_ptr + location - prefetch_buffer_fallback->location, len);
 		} else {
 			// No prefetch, do a regular (non-caching) read
-			file_handle.GetFileHandle().Read(context, buf, len, location);
+			file_handle.GetFileHandle().Read(buf, len, location);
 		}
 
 		location += len;
@@ -211,8 +213,6 @@ public:
 	}
 
 private:
-	QueryContext context;
-
 	CachingFileHandle &file_handle;
 	idx_t location;
 	idx_t size;

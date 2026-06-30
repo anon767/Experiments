@@ -14,7 +14,6 @@
 #include "duckdb/planner/expression_binder/select_bind_state.hpp"
 #include "duckdb/main/client_config.hpp"
 #include "duckdb/common/pair.hpp"
-#include "duckdb/main/settings.hpp"
 
 namespace duckdb {
 
@@ -60,9 +59,8 @@ optional_idx OrderBinder::TryGetProjectionReference(ParsedExpression &expr) cons
 			// non-integral expression
 			// ORDER BY <constant> has no effect
 			// this is disabled by default (matching Postgres) - but we can control this with a setting
-			auto order_by_non_integer_literal =
-			    DBConfig::GetSetting<OrderByNonIntegerLiteralSetting>(binders[0].get().context);
-			if (!order_by_non_integer_literal) {
+			auto &config = ClientConfig::GetConfig(binders[0].get().context);
+			if (!config.order_by_non_integer_literal) {
 				throw BinderException(expr,
 				                      "%s non-integer literal has no effect.\n* SET "
 				                      "order_by_non_integer_literal=true to allow this behavior.",

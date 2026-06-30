@@ -14,37 +14,24 @@
 
 namespace duckdb {
 
-static string PragmaTableInfo(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaTableInfo(ClientContext &context, const FunctionParameters &parameters) {
 	return StringUtil::Format("SELECT * FROM pragma_table_info(%s);",
 	                          KeywordHelper::WriteQuoted(parameters.values[0].ToString(), '\''));
 }
 
-string PragmaShowTables(const string &database, const string &schema) {
-	string where_clause = "";
-	vector<string> where_conditions;
-	if (!database.empty()) {
-		where_conditions.push_back(StringUtil::Format("lower(database_name) = lower(%s)", SQLString(database)));
-	}
-	if (!schema.empty()) {
-		where_conditions.push_back(StringUtil::Format("lower(schema_name) = lower(%s)", SQLString(schema)));
-	}
-	if (where_conditions.empty()) {
-		where_conditions.push_back("in_search_path(database_name, schema_name)");
-	}
-	where_clause = "WHERE " + StringUtil::Join(where_conditions, " AND ");
-
+string PragmaShowTables() {
 	// clang-format off
-	string query = R"EOF(
+	return R"EOF(
 	with "tables" as
 	(
 		SELECT table_name as "name"
 		FROM duckdb_tables
-		)EOF" + where_clause + R"EOF(
+		where in_search_path(database_name, schema_name)
 	), "views" as
 	(
 		SELECT view_name as "name"
 		FROM duckdb_views
-		)EOF" + where_clause + R"EOF(
+		where in_search_path(database_name, schema_name)
 	), db_objects as
 	(
 		SELECT "name" FROM "tables"
@@ -54,12 +41,10 @@ string PragmaShowTables(const string &database, const string &schema) {
 	SELECT "name"
 	FROM db_objects
 	ORDER BY "name";)EOF";
-
-	return query;
 	// clang-format on
 }
 
-static string PragmaShowTables(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaShowTables(ClientContext &context, const FunctionParameters &parameters) {
 	return PragmaShowTables();
 }
 
@@ -95,7 +80,7 @@ string PragmaShowTablesExpanded() {
 	)";
 }
 
-static string PragmaShowTablesExpanded(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaShowTablesExpanded(ClientContext &context, const FunctionParameters &parameters) {
 	return PragmaShowTablesExpanded();
 }
 
@@ -103,27 +88,27 @@ string PragmaShowDatabases() {
 	return "SELECT database_name FROM duckdb_databases() WHERE NOT internal ORDER BY database_name;";
 }
 
-static string PragmaShowDatabases(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaShowDatabases(ClientContext &context, const FunctionParameters &parameters) {
 	return PragmaShowDatabases();
 }
 
 string PragmaShowVariables() {
 	return "SELECT * FROM duckdb_variables() ORDER BY name";
 }
-static string PragmaAllProfiling(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaAllProfiling(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_last_profiling_output() JOIN pragma_detailed_profiling_output() ON "
 	       "(pragma_last_profiling_output.operator_id);";
 }
 
-static string PragmaDatabaseList(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaDatabaseList(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_database_list;";
 }
 
-static string PragmaCollations(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaCollations(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_collations() ORDER BY 1;";
 }
 
-static string PragmaFunctionsQuery(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaFunctionsQuery(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT function_name AS name, upper(function_type) AS type, parameter_types AS parameters, varargs, "
 	       "return_type, has_side_effects AS side_effects"
 	       " FROM duckdb_functions()"
@@ -135,24 +120,24 @@ string PragmaShow(const string &table_name) {
 	return StringUtil::Format("SELECT * FROM pragma_show(%s);", KeywordHelper::WriteQuoted(table_name, '\''));
 }
 
-static string PragmaShow(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaShow(ClientContext &context, const FunctionParameters &parameters) {
 	return PragmaShow(parameters.values[0].ToString());
 }
 
-static string PragmaVersion(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaVersion(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_version();";
 }
 
-static string PragmaExtensionVersions(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaExtensionVersions(ClientContext &context, const FunctionParameters &parameters) {
 	return "select extension_name, extension_version, install_mode, installed_from from duckdb_extensions() where "
 	       "installed";
 }
 
-static string PragmaPlatform(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaPlatform(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_platform();";
 }
 
-static string PragmaImportDatabase(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaImportDatabase(ClientContext &context, const FunctionParameters &parameters) {
 	auto &fs = FileSystem::GetFileSystem(context);
 
 	string final_query;
@@ -185,7 +170,7 @@ static string PragmaImportDatabase(ClientContext &context, const FunctionParamet
 	return final_query;
 }
 
-static string PragmaCopyDatabase(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaCopyDatabase(ClientContext &context, const FunctionParameters &parameters) {
 	string copy_stmt = "COPY FROM DATABASE ";
 	copy_stmt += KeywordHelper::WriteOptionallyQuoted(parameters.values[0].ToString());
 	copy_stmt += " TO ";
@@ -196,19 +181,19 @@ static string PragmaCopyDatabase(ClientContext &context, const FunctionParameter
 	return final_query;
 }
 
-static string PragmaDatabaseSize(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaDatabaseSize(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_database_size();";
 }
 
-static string PragmaStorageInfo(ClientContext &context, const FunctionParameters &parameters) {
-	return StringUtil::Format("SELECT * FROM pragma_storage_info(%s);", SQLString(parameters.values[0].ToString()));
+string PragmaStorageInfo(ClientContext &context, const FunctionParameters &parameters) {
+	return StringUtil::Format("SELECT * FROM pragma_storage_info('%s');", parameters.values[0].ToString());
 }
 
-static string PragmaMetadataInfo(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaMetadataInfo(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_metadata_info();";
 }
 
-static string PragmaUserAgent(ClientContext &context, const FunctionParameters &parameters) {
+string PragmaUserAgent(ClientContext &context, const FunctionParameters &parameters) {
 	return "SELECT * FROM pragma_user_agent()";
 }
 

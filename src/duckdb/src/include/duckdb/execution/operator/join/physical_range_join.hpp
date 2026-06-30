@@ -92,9 +92,9 @@ public:
 	};
 
 public:
-	PhysicalRangeJoin(PhysicalPlan &physical_plan, LogicalComparisonJoin &op, PhysicalOperatorType type,
-	                  PhysicalOperator &left, PhysicalOperator &right, vector<JoinCondition> cond, JoinType join_type,
-	                  idx_t estimated_cardinality, unique_ptr<JoinFilterPushdownInfo> pushdown_info);
+	PhysicalRangeJoin(LogicalComparisonJoin &op, PhysicalOperatorType type, PhysicalOperator &left,
+	                  PhysicalOperator &right, vector<JoinCondition> cond, JoinType join_type,
+	                  idx_t estimated_cardinality);
 
 	// Projection mappings
 	using ProjectionMapping = vector<column_t>;

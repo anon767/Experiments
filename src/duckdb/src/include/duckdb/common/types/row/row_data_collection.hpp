@@ -113,7 +113,8 @@ public:
 #ifdef DEBUG
 		for (auto &block : blocks) {
 			D_ASSERT(block->block->GetMemoryUsage() ==
-			         BufferManager::GetAllocSize(block->capacity * entry_size + Storage::DEFAULT_BLOCK_HEADER_SIZE));
+			         BufferManager::GetAllocSize(block->capacity * entry_size +
+			                                     buffer_manager.GetTemporaryBlockHeaderSize()));
 		}
 #endif
 	}

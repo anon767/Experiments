@@ -373,6 +373,12 @@ void Executor::VerifyPipelines() {
 #endif
 }
 
+void Executor::Initialize(unique_ptr<PhysicalOperator> physical_plan_p) {
+	Reset();
+	owned_plan = std::move(physical_plan_p);
+	InitializeInternal(*owned_plan);
+}
+
 void Executor::Initialize(PhysicalOperator &plan) {
 	Reset();
 	InitializeInternal(plan);
@@ -615,6 +621,7 @@ void Executor::Reset() {
 	lock_guard<mutex> elock(executor_lock);
 	physical_plan = nullptr;
 	cancelled = false;
+	owned_plan.reset();
 	root_executor.reset();
 	root_pipelines.clear();
 	root_pipeline_idx = 0;

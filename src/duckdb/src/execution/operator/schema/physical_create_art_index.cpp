@@ -14,13 +14,12 @@
 
 namespace duckdb {
 
-PhysicalCreateARTIndex::PhysicalCreateARTIndex(PhysicalPlan &physical_plan, LogicalOperator &op,
-                                               TableCatalogEntry &table_p, const vector<column_t> &column_ids,
-                                               unique_ptr<CreateIndexInfo> info,
+PhysicalCreateARTIndex::PhysicalCreateARTIndex(LogicalOperator &op, TableCatalogEntry &table_p,
+                                               const vector<column_t> &column_ids, unique_ptr<CreateIndexInfo> info,
                                                vector<unique_ptr<Expression>> unbound_expressions,
                                                idx_t estimated_cardinality, const bool sorted,
                                                unique_ptr<AlterTableInfo> alter_table_info)
-    : PhysicalOperator(physical_plan, PhysicalOperatorType::CREATE_INDEX, op.types, estimated_cardinality),
+    : PhysicalOperator(PhysicalOperatorType::CREATE_INDEX, op.types, estimated_cardinality),
       table(table_p.Cast<DuckTableEntry>()), info(std::move(info)), unbound_expressions(std::move(unbound_expressions)),
       sorted(sorted), alter_table_info(std::move(alter_table_info)) {
 
@@ -114,7 +113,7 @@ SinkResultType PhysicalCreateARTIndex::SinkSorted(OperatorSinkInput &input) cons
 	auto art = make_uniq<ART>(info->index_name, l_index->GetConstraintType(), l_index->GetColumnIds(),
 	                          l_index->table_io_manager, l_index->unbound_expressions, storage.db,
 	                          l_index->Cast<ART>().allocators);
-	if (art->Build(l_state.keys, l_state.row_ids, l_state.key_chunk.size()) != ARTConflictType::NO_CONFLICT) {
+	if (!art->Construct(l_state.keys, l_state.row_ids, l_state.key_chunk.size())) {
 		throw ConstraintException("Data contains duplicates on indexed column(s)");
 	}
 

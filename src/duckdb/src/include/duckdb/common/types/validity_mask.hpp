@@ -268,28 +268,19 @@ public:
 		}
 	}
 
-	//! Marks a range of entries in the validity mask as invalid (null)
-	//! This is useful for initialising large masks in parallel.
-	inline void SetRangeInvalid(const idx_t count, const idx_t begin_entry, const idx_t end_entry) {
+	//! Marks exactly "count" bits in the validity mask as invalid (null)
+	inline void SetAllInvalid(idx_t count) {
 		EnsureWritable();
 		if (count == 0) {
 			return;
 		}
-		const auto last_entry_index = ValidityBuffer::EntryCount(count) - 1;
-		for (idx_t i = begin_entry; i < MinValue(last_entry_index, end_entry); i++) {
+		auto last_entry_index = ValidityBuffer::EntryCount(count) - 1;
+		for (idx_t i = 0; i < last_entry_index; i++) {
 			validity_mask[i] = 0;
 		}
-		if (end_entry <= last_entry_index) {
-			return;
-		}
-		const auto last_entry_bits = count % BITS_PER_VALUE;
+		auto last_entry_bits = count % BITS_PER_VALUE;
 		validity_mask[last_entry_index] =
 		    (last_entry_bits == 0) ? 0 : static_cast<V>(ValidityBuffer::MAX_ENTRY << (last_entry_bits));
-	}
-
-	//! Marks exactly "count" bits in the validity mask as invalid (null)
-	inline void SetAllInvalid(idx_t count) {
-		SetRangeInvalid(count, 0, EntryCount(count));
 	}
 
 	//! Marks exactly "count" bits in the validity mask as valid (not null)

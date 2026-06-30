@@ -15,15 +15,13 @@
 
 namespace duckdb {
 
-static void GetColumnIndex(unique_ptr<Expression> &expr, idx_t &index, string &alias) {
+static void GetColumnIndex(unique_ptr<Expression> &expr, idx_t &index) {
 	if (expr->type == ExpressionType::BOUND_REF) {
 		auto &bound_ref = expr->Cast<BoundReferenceExpression>();
 		index = bound_ref.index;
-		alias = bound_ref.alias;
 		return;
 	}
-	ExpressionIterator::EnumerateChildren(*expr,
-	                                      [&](unique_ptr<Expression> &child) { GetColumnIndex(child, index, alias); });
+	ExpressionIterator::EnumerateChildren(*expr, [&](unique_ptr<Expression> &child) { GetColumnIndex(child, index); });
 }
 
 FilterPropagateResult StatisticsPropagator::PropagateTableFilter(ColumnBinding stats_binding, BaseStatistics &stats,
@@ -34,16 +32,15 @@ FilterPropagateResult StatisticsPropagator::PropagateTableFilter(ColumnBinding s
 		// get physical storage index of the filter
 		// since it is a table filter, every storage index is the same
 		idx_t physical_index = DConstants::INVALID_INDEX;
-		string column_alias;
-		GetColumnIndex(expr_filter.expr, physical_index, column_alias);
+		GetColumnIndex(expr_filter.expr, physical_index);
 		D_ASSERT(physical_index != DConstants::INVALID_INDEX);
 
-		auto column_ref = make_uniq<BoundColumnRefExpression>(column_alias, stats.GetType(), stats_binding);
+		auto column_ref = make_uniq<BoundColumnRefExpression>(stats.GetType(), stats_binding);
 		auto filter_expr = expr_filter.ToExpression(*column_ref);
 		// handle the filter before updating the statistics
 		// otherwise the filter can be pruned by the updated statistics
 		auto propagate_result = HandleFilter(filter_expr);
-		auto colref = make_uniq<BoundReferenceExpression>(column_alias, stats.GetType(), physical_index);
+		auto colref = make_uniq<BoundReferenceExpression>(stats.GetType(), physical_index);
 		UpdateFilterStatistics(*filter_expr);
 
 		// replace BoundColumnRefs with BoundRefs

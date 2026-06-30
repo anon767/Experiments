@@ -10,8 +10,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct ApproxQuantileState {
 	duckdb_tdigest::TDigest *h;
 	idx_t pos;
@@ -170,7 +168,7 @@ struct ApproxQuantileScalarOperation : public ApproxQuantileOperation {
 	}
 };
 
-AggregateFunction GetApproximateQuantileAggregateFunction(const LogicalType &type) {
+static AggregateFunction GetApproximateQuantileAggregateFunction(const LogicalType &type) {
 	//	Not binary comparable
 	if (type == LogicalType::TIME_TZ) {
 		return AggregateFunction::UnaryAggregateDestructor<ApproxQuantileState, dtime_tz_t, dtime_tz_t,
@@ -203,7 +201,7 @@ AggregateFunction GetApproximateQuantileAggregateFunction(const LogicalType &typ
 	}
 }
 
-AggregateFunction GetApproximateQuantileDecimalAggregateFunction(const LogicalType &type) {
+static AggregateFunction GetApproximateQuantileDecimalAggregateFunction(const LogicalType &type) {
 	switch (type.InternalType()) {
 	case PhysicalType::INT8:
 		return GetApproximateQuantileAggregateFunction(LogicalType::TINYINT);
@@ -220,7 +218,7 @@ AggregateFunction GetApproximateQuantileDecimalAggregateFunction(const LogicalTy
 	}
 }
 
-float CheckApproxQuantile(const Value &quantile_val) {
+static float CheckApproxQuantile(const Value &quantile_val) {
 	if (quantile_val.IsNull()) {
 		throw BinderException("APPROXIMATE QUANTILE parameter cannot be NULL");
 	}
@@ -328,7 +326,7 @@ struct ApproxQuantileListOperation : public ApproxQuantileOperation {
 };
 
 template <class STATE, class INPUT_TYPE, class RESULT_TYPE, class OP>
-AggregateFunction ApproxQuantileListAggregate(const LogicalType &input_type, const LogicalType &child_type) {
+static AggregateFunction ApproxQuantileListAggregate(const LogicalType &input_type, const LogicalType &child_type) {
 	LogicalType result_type = LogicalType::LIST(child_type);
 	return AggregateFunction(
 	    {input_type}, result_type, AggregateFunction::StateSize<STATE>, AggregateFunction::StateInitialize<STATE, OP>,
@@ -355,11 +353,11 @@ AggregateFunction GetApproxQuantileListAggregateFunction(const LogicalType &type
 		return GetTypedApproxQuantileListAggregateFunction<int16_t, int16_t>(type);
 	case LogicalTypeId::INTEGER:
 	case LogicalTypeId::DATE:
+	case LogicalTypeId::TIME:
 		return GetTypedApproxQuantileListAggregateFunction<int32_t, int32_t>(type);
 	case LogicalTypeId::BIGINT:
 	case LogicalTypeId::TIMESTAMP:
 	case LogicalTypeId::TIMESTAMP_TZ:
-	case LogicalTypeId::TIME:
 		return GetTypedApproxQuantileListAggregateFunction<int64_t, int64_t>(type);
 	case LogicalTypeId::TIME_TZ:
 		//	Not binary comparable
@@ -443,7 +441,6 @@ AggregateFunction GetApproxQuantileDecimalList() {
 	fun.deserialize = ApproxQuantileDecimalDeserialize;
 	return fun;
 }
-} // namespace
 
 AggregateFunctionSet ApproxQuantileFun::GetFunctions() {
 	AggregateFunctionSet approx_quantile;

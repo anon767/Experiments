@@ -4,8 +4,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct ReduceExecuteInfo {
 	ReduceExecuteInfo(LambdaFunctions::LambdaInfo &info, ClientContext &context)
 	    : left_slice(make_uniq<Vector>(*info.child_vector)) {
@@ -64,8 +62,8 @@ struct ReduceExecuteInfo {
 	SelectionVector active_rows_sel;
 };
 
-bool ExecuteReduce(const idx_t loops, ReduceExecuteInfo &execute_info, LambdaFunctions::LambdaInfo &info,
-                   DataChunk &result_chunk) {
+static bool ExecuteReduce(const idx_t loops, ReduceExecuteInfo &execute_info, LambdaFunctions::LambdaInfo &info,
+                          DataChunk &result_chunk) {
 	idx_t original_row_idx = 0;
 	idx_t reduced_row_idx = 0;
 	idx_t valid_row_idx = 0;
@@ -173,8 +171,44 @@ bool ExecuteReduce(const idx_t loops, ReduceExecuteInfo &execute_info, LambdaFun
 	return false;
 }
 
-unique_ptr<FunctionData> ListReduceBind(ClientContext &context, ScalarFunction &bound_function,
-                                        vector<unique_ptr<Expression>> &arguments) {
+void LambdaFunctions::ListReduceFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	// Initializes the left slice from the list entries, active rows, the expression executor and the input types
+	bool completed = false;
+	LambdaInfo info(args, state, result, completed);
+	if (completed) {
+		return;
+	}
+
+	ReduceExecuteInfo execute_info(info, state.GetContext());
+
+	// Since the left slice references the result chunk, we need to create two result chunks.
+	// This means there is always an empty result chunk for the next iteration,
+	// without the referenced chunk having to be reset until the current iteration is complete.
+	DataChunk odd_result_chunk;
+	odd_result_chunk.Initialize(Allocator::DefaultAllocator(), {info.lambda_expr->return_type});
+
+	DataChunk even_result_chunk;
+	even_result_chunk.Initialize(Allocator::DefaultAllocator(), {info.lambda_expr->return_type});
+
+	// Execute reduce until all rows are finished.
+	idx_t loops = 0;
+	bool end = false;
+	while (!end) {
+		auto &result_chunk = loops % 2 ? odd_result_chunk : even_result_chunk;
+		auto &spare_result_chunk = loops % 2 ? even_result_chunk : odd_result_chunk;
+
+		end = ExecuteReduce(loops, execute_info, info, result_chunk);
+		spare_result_chunk.Reset();
+		loops++;
+	}
+
+	if (info.is_all_constant && !info.is_volatile) {
+		info.result.SetVectorType(VectorType::CONSTANT_VECTOR);
+	}
+}
+
+static unique_ptr<FunctionData> ListReduceBind(ClientContext &context, ScalarFunction &bound_function,
+                                               vector<unique_ptr<Expression>> &arguments) {
 
 	// the list column and the bound lambda expression
 	D_ASSERT(arguments.size() == 2 || arguments.size() == 3);
@@ -264,47 +298,9 @@ LogicalType BindReduceChildren(ClientContext &context, const vector<LogicalType>
 	}
 }
 
-LogicalType ListReduceBindLambda(ClientContext &context, const vector<LogicalType> &function_child_types,
-                                 const idx_t parameter_idx) {
+static LogicalType ListReduceBindLambda(ClientContext &context, const vector<LogicalType> &function_child_types,
+                                        const idx_t parameter_idx) {
 	return BindReduceChildren(context, function_child_types, parameter_idx);
-}
-
-} // namespace
-
-void LambdaFunctions::ListReduceFunction(DataChunk &args, ExpressionState &state, Vector &result) {
-	// Initializes the left slice from the list entries, active rows, the expression executor and the input types
-	bool completed = false;
-	LambdaInfo info(args, state, result, completed);
-	if (completed) {
-		return;
-	}
-
-	ReduceExecuteInfo execute_info(info, state.GetContext());
-
-	// Since the left slice references the result chunk, we need to create two result chunks.
-	// This means there is always an empty result chunk for the next iteration,
-	// without the referenced chunk having to be reset until the current iteration is complete.
-	DataChunk odd_result_chunk;
-	odd_result_chunk.Initialize(Allocator::DefaultAllocator(), {info.lambda_expr->return_type});
-
-	DataChunk even_result_chunk;
-	even_result_chunk.Initialize(Allocator::DefaultAllocator(), {info.lambda_expr->return_type});
-
-	// Execute reduce until all rows are finished.
-	idx_t loops = 0;
-	bool end = false;
-	while (!end) {
-		auto &result_chunk = loops % 2 ? odd_result_chunk : even_result_chunk;
-		auto &spare_result_chunk = loops % 2 ? even_result_chunk : odd_result_chunk;
-
-		end = ExecuteReduce(loops, execute_info, info, result_chunk);
-		spare_result_chunk.Reset();
-		loops++;
-	}
-
-	if (info.is_all_constant && !info.is_volatile) {
-		info.result.SetVectorType(VectorType::CONSTANT_VECTOR);
-	}
 }
 
 ScalarFunctionSet ListReduceFun::GetFunctions() {

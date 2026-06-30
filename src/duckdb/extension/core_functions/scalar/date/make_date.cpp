@@ -11,9 +11,7 @@
 
 namespace duckdb {
 
-namespace {
-
-void MakeDateFromEpoch(DataChunk &input, ExpressionState &state, Vector &result) {
+static void MakeDateFromEpoch(DataChunk &input, ExpressionState &state, Vector &result) {
 	D_ASSERT(input.ColumnCount() == 1);
 	result.Reinterpret(input.data[0]);
 }
@@ -27,7 +25,7 @@ struct MakeDateOperator {
 };
 
 template <typename T>
-void ExecuteMakeDate(DataChunk &input, ExpressionState &state, Vector &result) {
+static void ExecuteMakeDate(DataChunk &input, ExpressionState &state, Vector &result) {
 	D_ASSERT(input.ColumnCount() == 3);
 	auto &yyyy = input.data[0];
 	auto &mm = input.data[1];
@@ -38,7 +36,7 @@ void ExecuteMakeDate(DataChunk &input, ExpressionState &state, Vector &result) {
 }
 
 template <typename T>
-date_t FromDateCast(T year, T month, T day) {
+static date_t FromDateCast(T year, T month, T day) {
 	date_t result;
 	if (!Date::TryFromDate(Cast::Operation<T, int32_t>(year), Cast::Operation<T, int32_t>(month),
 	                       Cast::Operation<T, int32_t>(day), result)) {
@@ -48,7 +46,7 @@ date_t FromDateCast(T year, T month, T day) {
 }
 
 template <typename T>
-void ExecuteStructMakeDate(DataChunk &input, ExpressionState &state, Vector &result) {
+static void ExecuteStructMakeDate(DataChunk &input, ExpressionState &state, Vector &result) {
 	// this should be guaranteed by the binder
 	D_ASSERT(input.ColumnCount() == 1);
 	auto &vec = input.data[0];
@@ -85,7 +83,7 @@ struct MakeTimeOperator {
 };
 
 template <typename T>
-void ExecuteMakeTime(DataChunk &input, ExpressionState &state, Vector &result) {
+static void ExecuteMakeTime(DataChunk &input, ExpressionState &state, Vector &result) {
 	D_ASSERT(input.ColumnCount() == 3);
 	auto &yyyy = input.data[0];
 	auto &mm = input.data[1];
@@ -114,7 +112,7 @@ struct MakeTimestampOperator {
 };
 
 template <typename T>
-void ExecuteMakeTimestamp(DataChunk &input, ExpressionState &state, Vector &result) {
+static void ExecuteMakeTimestamp(DataChunk &input, ExpressionState &state, Vector &result) {
 	if (input.ColumnCount() == 1) {
 		auto func = MakeTimestampOperator::Operation<T, timestamp_t>;
 		UnaryExecutor::Execute<T, timestamp_t>(input.data[0], result, input.size(), func);
@@ -128,15 +126,13 @@ void ExecuteMakeTimestamp(DataChunk &input, ExpressionState &state, Vector &resu
 }
 
 template <typename T>
-void ExecuteMakeTimestampNs(DataChunk &input, ExpressionState &state, Vector &result) {
+static void ExecuteMakeTimestampNs(DataChunk &input, ExpressionState &state, Vector &result) {
 	D_ASSERT(input.ColumnCount() == 1);
 
 	auto func = MakeTimestampOperator::Operation<T, timestamp_ns_t>;
 	UnaryExecutor::Execute<T, timestamp_ns_t>(input.data[0], result, input.size(), func);
 	return;
 }
-
-} // namespace
 
 ScalarFunctionSet MakeDateFun::GetFunctions() {
 	ScalarFunctionSet make_date("make_date");

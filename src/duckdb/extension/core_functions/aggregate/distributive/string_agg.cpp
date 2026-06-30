@@ -10,8 +10,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct StringAggState {
 	idx_t size;
 	idx_t alloc_size;
@@ -137,8 +135,8 @@ unique_ptr<FunctionData> StringAggBind(ClientContext &context, AggregateFunction
 	return make_uniq<StringAggBindData>(std::move(separator_string));
 }
 
-void StringAggSerialize(Serializer &serializer, const optional_ptr<FunctionData> bind_data_p,
-                        const AggregateFunction &function) {
+static void StringAggSerialize(Serializer &serializer, const optional_ptr<FunctionData> bind_data_p,
+                               const AggregateFunction &function) {
 	auto bind_data = bind_data_p->Cast<StringAggBindData>();
 	serializer.WriteProperty(100, "separator", bind_data.sep);
 }
@@ -147,8 +145,6 @@ unique_ptr<FunctionData> StringAggDeserialize(Deserializer &deserializer, Aggreg
 	auto sep = deserializer.ReadProperty<string>(100, "separator");
 	return make_uniq<StringAggBindData>(std::move(sep));
 }
-
-} // namespace
 
 AggregateFunctionSet StringAggFun::GetFunctions() {
 	AggregateFunctionSet string_agg;

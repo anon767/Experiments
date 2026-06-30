@@ -6,10 +6,8 @@
 
 namespace duckdb {
 
-namespace {
-
-unique_ptr<FunctionData> UnionTagBind(ClientContext &context, ScalarFunction &bound_function,
-                                      vector<unique_ptr<Expression>> &arguments) {
+static unique_ptr<FunctionData> UnionTagBind(ClientContext &context, ScalarFunction &bound_function,
+                                             vector<unique_ptr<Expression>> &arguments) {
 
 	if (arguments.empty()) {
 		throw BinderException("Missing required arguments for union_tag function.");
@@ -47,12 +45,10 @@ unique_ptr<FunctionData> UnionTagBind(ClientContext &context, ScalarFunction &bo
 	return nullptr;
 }
 
-void UnionTagFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void UnionTagFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	D_ASSERT(result.GetType().id() == LogicalTypeId::ENUM);
 	result.Reinterpret(UnionVector::GetTags(args.data[0]));
 }
-
-} // namespace
 
 ScalarFunction UnionTagFun::GetFunction() {
 	return ScalarFunction({LogicalTypeId::UNION}, LogicalTypeId::ANY, UnionTagFunction, UnionTagBind, nullptr,

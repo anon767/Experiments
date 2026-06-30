@@ -23,7 +23,7 @@ export interface Node {
   longname: string;
   scope: string;
 }
-/*
+
 if (process?.platform != 'win32') {
 describe("JSDoc contains all methods", () => {
   let docs: Node[];
@@ -60,4 +60,3 @@ describe("JSDoc contains all methods", () => {
   });
 });
 }
-*/

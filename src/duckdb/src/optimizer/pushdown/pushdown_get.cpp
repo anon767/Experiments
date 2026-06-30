@@ -4,7 +4,6 @@
 #include "duckdb/planner/expression/bound_parameter_expression.hpp"
 #include "duckdb/planner/operator/logical_filter.hpp"
 #include "duckdb/planner/operator/logical_get.hpp"
-#include "duckdb/planner/operator/logical_empty_result.hpp"
 
 namespace duckdb {
 unique_ptr<LogicalOperator> FilterPushdown::PushdownGet(unique_ptr<LogicalOperator> op) {
@@ -49,9 +48,7 @@ unique_ptr<LogicalOperator> FilterPushdown::PushdownGet(unique_ptr<LogicalOperat
 		// the table function does not support filter pushdown: push a LogicalFilter on top
 		return FinishPushdown(std::move(op));
 	}
-	if (PushFilters() == FilterResult::UNSATISFIABLE) {
-		return make_uniq<LogicalEmptyResult>(std::move(op));
-	}
+	PushFilters();
 
 	//! We generate the table filters that will be executed during the table scan
 	vector<FilterPushdownResult> pushdown_results;

@@ -9,7 +9,6 @@
 
 namespace duckdb {
 
-namespace {
 struct RegrSState {
 	size_t count;
 	StddevState var_pop;
@@ -62,8 +61,6 @@ struct RegrSYYOperation : RegrBaseOperation {
 		STDDevBaseOperation::Execute<A_TYPE, StddevState>(state.var_pop, y);
 	}
 };
-
-} // namespace
 
 AggregateFunction RegrSXXFun::GetFunction() {
 	return AggregateFunction::BinaryAggregate<RegrSState, double, double, double, RegrSXXOperation>(

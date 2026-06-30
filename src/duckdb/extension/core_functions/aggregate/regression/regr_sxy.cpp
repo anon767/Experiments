@@ -8,8 +8,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct RegrSXyState {
 	size_t count;
 	CovarState cov_pop;
@@ -46,8 +44,6 @@ struct RegrSXYOperation {
 		return true;
 	}
 };
-
-} // namespace
 
 AggregateFunction RegrSXYFun::GetFunction() {
 	return AggregateFunction::BinaryAggregate<RegrSXyState, double, double, double, RegrSXYOperation>(

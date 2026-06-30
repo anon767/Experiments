@@ -14,12 +14,11 @@
 #include "duckdb/catalog/catalog_entry/table_catalog_entry.hpp"
 #include "duckdb/main/client_config.hpp"
 #include "duckdb/main/config.hpp"
-#include "duckdb/main/settings.hpp"
 
 namespace duckdb {
 
 LateMaterialization::LateMaterialization(Optimizer &optimizer) : optimizer(optimizer) {
-	max_row_count = DBConfig::GetSetting<LateMaterializationMaxRowsSetting>(optimizer.context);
+	max_row_count = ClientConfig::GetConfig(optimizer.context).late_materialization_max_rows;
 }
 
 vector<idx_t> LateMaterialization::GetOrInsertRowIds(LogicalGet &get) {
@@ -138,7 +137,7 @@ void LateMaterialization::ReplaceTopLevelTableIndex(LogicalOperator &root, idx_t
 			// visit the expressions of the operator and continue into the child node
 			auto &top_n = op.Cast<LogicalTopN>();
 			for (auto &order : top_n.orders) {
-				ReplaceTableReferences(order.expression, new_index);
+				ReplaceTableReferences(*order.expression, new_index);
 			}
 			current_op = *op.children[0];
 			break;
@@ -148,7 +147,7 @@ void LateMaterialization::ReplaceTopLevelTableIndex(LogicalOperator &root, idx_t
 		case LogicalOperatorType::LOGICAL_LIMIT: {
 			// visit the expressions of the operator and continue into the child node
 			for (auto &expr : op.expressions) {
-				ReplaceTableReferences(expr, new_index);
+				ReplaceTableReferences(*expr, new_index);
 			}
 			current_op = *op.children[0];
 			break;
@@ -159,11 +158,14 @@ void LateMaterialization::ReplaceTopLevelTableIndex(LogicalOperator &root, idx_t
 	}
 }
 
-void LateMaterialization::ReplaceTableReferences(unique_ptr<Expression> &root_expr, idx_t new_table_index) {
-	ExpressionIterator::VisitExpressionMutable<BoundColumnRefExpression>(
-	    root_expr, [&](BoundColumnRefExpression &bound_column_ref, unique_ptr<Expression> &expr) {
-		    bound_column_ref.binding.table_index = new_table_index;
-	    });
+void LateMaterialization::ReplaceTableReferences(Expression &expr, idx_t new_table_index) {
+	if (expr.GetExpressionType() == ExpressionType::BOUND_COLUMN_REF) {
+		auto &bound_column_ref = expr.Cast<BoundColumnRefExpression>();
+		bound_column_ref.binding.table_index = new_table_index;
+	}
+
+	ExpressionIterator::EnumerateChildren(expr,
+	                                      [&](Expression &child) { ReplaceTableReferences(child, new_table_index); });
 }
 
 unique_ptr<Expression> LateMaterialization::GetExpression(LogicalOperator &op, idx_t column_index) {
@@ -184,11 +186,15 @@ unique_ptr<Expression> LateMaterialization::GetExpression(LogicalOperator &op, i
 	}
 }
 
-void LateMaterialization::ReplaceExpressionReferences(LogicalOperator &next_op, unique_ptr<Expression> &root_expr) {
-	ExpressionIterator::VisitExpressionMutable<BoundColumnRefExpression>(
-	    root_expr, [&](BoundColumnRefExpression &bound_column_ref, unique_ptr<Expression> &expr) {
-		    expr = GetExpression(next_op, bound_column_ref.binding.column_index);
-	    });
+void LateMaterialization::ReplaceExpressionReferences(LogicalOperator &next_op, unique_ptr<Expression> &expr) {
+	if (expr->GetExpressionType() == ExpressionType::BOUND_COLUMN_REF) {
+		auto &bound_column_ref = expr->Cast<BoundColumnRefExpression>();
+		expr = GetExpression(next_op, bound_column_ref.binding.column_index);
+		return;
+	}
+
+	ExpressionIterator::EnumerateChildren(
+	    *expr, [&](unique_ptr<Expression> &child) { ReplaceExpressionReferences(next_op, child); });
 }
 
 bool LateMaterialization::TryLateMaterialization(unique_ptr<LogicalOperator> &op) {
@@ -378,7 +384,7 @@ bool LateMaterialization::TryLateMaterialization(unique_ptr<LogicalOperator> &op
 		proj->children.push_back(std::move(join));
 
 		for (auto &order : final_orders) {
-			ReplaceTableReferences(order.expression, proj_index);
+			ReplaceTableReferences(*order.expression, proj_index);
 		}
 		auto order = make_uniq<LogicalOrder>(std::move(final_orders));
 		if (proj->has_estimated_cardinality) {
@@ -412,7 +418,8 @@ bool LateMaterialization::TryLateMaterialization(unique_ptr<LogicalOperator> &op
 }
 
 bool LateMaterialization::OptimizeLargeLimit(LogicalLimit &limit, idx_t limit_val, bool has_offset) {
-	if (!has_offset && !DBConfig::GetSetting<PreserveInsertionOrderSetting>(optimizer.context)) {
+	auto &config = DBConfig::GetConfig(optimizer.context);
+	if (!has_offset && !config.options.preserve_insertion_order) {
 		// we avoid optimizing large limits if preserve insertion order is false
 		// since the limit is executed in parallel anyway
 		return false;
@@ -431,11 +438,6 @@ bool LateMaterialization::OptimizeLargeLimit(LogicalLimit &limit, idx_t limit_va
 			return false;
 		}
 		current_op = *current_op.get().children[0];
-	}
-	// if there are any filters we shouldn't do large limit optimization
-	auto &get = current_op.get().Cast<LogicalGet>();
-	if (!get.table_filters.filters.empty()) {
-		return false;
 	}
 	return true;
 }

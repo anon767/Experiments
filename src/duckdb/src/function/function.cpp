@@ -101,8 +101,6 @@ void BuiltinFunctions::Initialize() {
 
 	RegisterPragmaFunctions();
 
-	RegisterCopyFunctions();
-
 	// initialize collations
 	AddCollation("nocase", LowerFun::GetFunction(), true);
 	AddCollation("noaccent", StripAccentsFun::GetFunction(), true);

@@ -72,12 +72,9 @@ void UncompressedCompressState::CreateEmptySegment(idx_t row_start) {
 	                                                                info.GetBlockManager());
 	if (type.InternalType() == PhysicalType::VARCHAR) {
 		auto &state = compressed_segment->GetSegmentState()->Cast<UncompressedStringSegmentState>();
-		auto &storage_manager = checkpoint_data.GetStorageManager();
-		if (!storage_manager.InMemory()) {
-			auto &partial_block_manager = checkpoint_data.GetCheckpointState().GetPartialBlockManager();
-			state.block_manager = partial_block_manager.GetBlockManager();
-			state.overflow_writer = make_uniq<WriteOverflowStringsToDisk>(partial_block_manager);
-		}
+		auto &partial_block_manager = checkpoint_data.GetCheckpointState().GetPartialBlockManager();
+		state.block_manager = partial_block_manager.GetBlockManager();
+		state.overflow_writer = make_uniq<WriteOverflowStringsToDisk>(partial_block_manager);
 	}
 	current_segment = std::move(compressed_segment);
 	current_segment->InitializeAppend(append_state);
@@ -87,10 +84,8 @@ void UncompressedCompressState::FlushSegment(idx_t segment_size) {
 	auto &state = checkpoint_data.GetCheckpointState();
 	if (current_segment->type.InternalType() == PhysicalType::VARCHAR) {
 		auto &segment_state = current_segment->GetSegmentState()->Cast<UncompressedStringSegmentState>();
-		if (segment_state.overflow_writer) {
-			segment_state.overflow_writer->Flush();
-			segment_state.overflow_writer.reset();
-		}
+		segment_state.overflow_writer->Flush();
+		segment_state.overflow_writer.reset();
 	}
 	append_state.child_appends.clear();
 	append_state.append_state.reset();

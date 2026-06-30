@@ -15,9 +15,6 @@
 
 #include "duckdb/original/std/memory.hpp"
 #include "duckdb/common/string.hpp"
-#include <exception>
-#include <stdexcept>
-
 
 /*
  * Configuration
@@ -288,7 +285,6 @@ using socket_t = int;
 
 #include <iostream>
 #include <sstream>
-
 
 // Disabled OpenSSL version check for CI
 //#if OPENSSL_VERSION_NUMBER < 0x1010100fL
@@ -2582,7 +2578,7 @@ inline std::string trim_double_quotes_copy(const std::string &s) {
 
 inline void split(const char *b, const char *e, char d,
                   std::function<void(const char *, const char *)> fn) {
-  return split(b, e, d, static_cast<size_t>((std::numeric_limits<size_t>::max)()), fn);
+  return split(b, e, d, std::numeric_limits<size_t>::max(), fn);
 }
 
 inline void split(const char *b, const char *e, char d, size_t m,
@@ -3430,7 +3426,7 @@ inline unsigned int str2tag(const std::string &s) {
 
 namespace udl {
 
-inline constexpr unsigned int operator ""_t(const char *s, size_t l) {
+inline constexpr unsigned int operator "" _t(const char *s, size_t l) {
   return str2tag_core(s, l, 0);
 }
 
@@ -3445,7 +3441,7 @@ find_content_type(const std::string &path,
   auto it = user_data.find(ext);
   if (it != user_data.end()) { return it->second; }
 
-  using udl::operator ""_t;
+  using udl::operator "" _t;
 
   switch (str2tag(ext)) {
   default: return default_content_type;
@@ -3503,7 +3499,7 @@ find_content_type(const std::string &path,
 }
 
 inline bool can_compress_content_type(const std::string &content_type) {
-  using udl::operator ""_t;
+  using udl::operator "" _t;
 
   auto tag = str2tag(content_type);
 
@@ -7077,12 +7073,7 @@ inline bool ClientImpl::redirect(Request &req, Response &res, Error &error) {
   }
 
   auto location = res.get_header_value("location");
-  if (location.empty()) {
-    // s3 requests will not return a location header, and instead a
-    // X-Amx-Region-Bucket header. Return true so all response headers
-    // are returned to the httpfs/calling extension
-    return true;
-  }
+  if (location.empty()) { return false; }
 
   const Regex re(
       R"((?:(https?):)?(?://(?:\[([\d:]+)\]|([^:/?#]+))(?::(\d+))?)?([^?#]*)(\?[^#]*)?(?:#.*)?)");
@@ -8560,11 +8551,7 @@ inline long SSLClient::get_openssl_verify_result() const {
 inline SSL_CTX *SSLClient::ssl_context() const { return ctx_; }
 
 inline bool SSLClient::create_and_connect_socket(Socket &socket, Error &error) {
-  if (!is_valid()) {
-    error = Error::SSLConnection;
-    return false;
-  }
-  return ClientImpl::create_and_connect_socket(socket, error);
+  return is_valid() && ClientImpl::create_and_connect_socket(socket, error);
 }
 
 // Assumes that socket_mutex_ is locked and that there are no requests in flight

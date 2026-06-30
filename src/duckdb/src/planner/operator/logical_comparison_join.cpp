@@ -35,14 +35,12 @@ InsertionOrderPreservingMap<string> LogicalComparisonJoin::ParamsToString() cons
 }
 
 bool LogicalComparisonJoin::HasEquality(idx_t &range_count) const {
-	bool result = false;
 	for (size_t c = 0; c < conditions.size(); ++c) {
 		auto &cond = conditions[c];
 		switch (cond.comparison) {
 		case ExpressionType::COMPARE_EQUAL:
 		case ExpressionType::COMPARE_NOT_DISTINCT_FROM:
-			result = true;
-			break;
+			return true;
 		case ExpressionType::COMPARE_LESSTHAN:
 		case ExpressionType::COMPARE_GREATERTHAN:
 		case ExpressionType::COMPARE_LESSTHANOREQUALTO:
@@ -56,7 +54,7 @@ bool LogicalComparisonJoin::HasEquality(idx_t &range_count) const {
 			throw NotImplementedException("Unimplemented comparison join");
 		}
 	}
-	return result;
+	return false;
 }
 
 } // namespace duckdb

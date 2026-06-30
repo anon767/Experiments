@@ -48,8 +48,6 @@
 
 #include "src/execution/physical_plan/plan_limit.cpp"
 
-#include "src/execution/physical_plan/plan_merge_into.cpp"
-
 #include "src/execution/physical_plan/plan_order.cpp"
 
 #include "src/execution/physical_plan/plan_pivot.cpp"

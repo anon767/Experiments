@@ -84,7 +84,7 @@ static unique_ptr<FunctionData> StructConcatBind(ClientContext &context, ScalarF
 	return nullptr;
 }
 
-static unique_ptr<BaseStatistics> StructConcatStats(ClientContext &context, FunctionStatisticsInput &input) {
+unique_ptr<BaseStatistics> StructConcatStats(ClientContext &context, FunctionStatisticsInput &input) {
 	const auto &expr = input.expr;
 
 	auto &arg_stats = input.child_stats;

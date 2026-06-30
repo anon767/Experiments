@@ -38,13 +38,7 @@ LogicalIndex TableCatalogEntry::GetColumnIndex(string &column_name, bool if_exis
 		if (if_exists) {
 			return entry;
 		}
-		vector<string> column_names;
-		for (auto &col : columns.Logical()) {
-			column_names.push_back(col.Name());
-		}
-		auto candidates = StringUtil::CandidatesErrorMessage(column_names, column_name, "Did you mean");
-		throw BinderException("Table \"%s\" does not have a column with name \"%s\"\n%s", name, column_name,
-		                      candidates);
+		throw BinderException("Table \"%s\" does not have a column with name \"%s\"", name, column_name);
 	}
 	return entry;
 }
@@ -247,21 +241,21 @@ void LogicalUpdate::BindExtraColumns(TableCatalogEntry &table, LogicalGet &get, 
 		}
 	}
 	if (found_column_count > 0 && found_column_count != bound_columns.size()) {
-		// columns that were required are not all part of the UPDATE
+		// columns in this CHECK constraint were referenced, but not all were part of the UPDATE
 		// add them to the scan and update set
-		for (auto &physical_id : bound_columns) {
-			if (found_columns.find(physical_id) != found_columns.end()) {
+		for (auto &check_column_id : bound_columns) {
+			if (found_columns.find(check_column_id) != found_columns.end()) {
 				// column is already projected
 				continue;
 			}
 			// column is not projected yet: project it by adding the clause "i=i" to the set of updated columns
-			auto &column = table.GetColumns().GetColumn(physical_id);
+			auto &column = table.GetColumns().GetColumn(check_column_id);
 			update.expressions.push_back(make_uniq<BoundColumnRefExpression>(
 			    column.Type(), ColumnBinding(proj.table_index, proj.expressions.size())));
 			proj.expressions.push_back(make_uniq<BoundColumnRefExpression>(
 			    column.Type(), ColumnBinding(get.table_index, get.GetColumnIds().size())));
-			get.AddColumnId(column.Logical().index);
-			update.columns.push_back(physical_id);
+			get.AddColumnId(check_column_id.index);
+			update.columns.push_back(check_column_id);
 		}
 	}
 }
@@ -305,7 +299,7 @@ void TableCatalogEntry::BindUpdateConstraints(Binder &binder, LogicalGet &get, L
 				break;
 			}
 		}
-	}
+	};
 
 	// we also convert any updates on LIST columns into delete + insert
 	for (auto &col_index : update.columns) {

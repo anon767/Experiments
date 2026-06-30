@@ -68,8 +68,8 @@ BindResult ExpressionBinder::TryBindLambdaOrJson(FunctionExpression &function, i
 	                  json_bind_result.error.RawMessage());
 }
 
-optional_ptr<CatalogEntry> ExpressionBinder::BindAndQualifyFunction(FunctionExpression &function, bool allow_throw) {
-	D_ASSERT(!IsUnnestFunction(function.function_name));
+BindResult ExpressionBinder::BindExpression(FunctionExpression &function, idx_t depth,
+                                            unique_ptr<ParsedExpression> &expr_ptr) {
 	// lookup the function in the catalog
 	QueryErrorContext error_context(function.GetQueryLocation());
 	binder.BindSchemaOrCatalog(function.catalog, function.schema);
@@ -82,9 +82,6 @@ optional_ptr<CatalogEntry> ExpressionBinder::BindAndQualifyFunction(FunctionExpr
 		auto table_func =
 		    GetCatalogEntry(function.catalog, function.schema, table_function_lookup, OnEntryNotFound::RETURN_NULL);
 		if (table_func) {
-			if (!allow_throw) {
-				return func;
-			}
 			throw BinderException(function,
 			                      "Function \"%s\" is a table function but it was used as a scalar function. This "
 			                      "function has to be called in a FROM clause (similar to a table).",
@@ -108,9 +105,6 @@ optional_ptr<CatalogEntry> ExpressionBinder::BindAndQualifyFunction(FunctionExpr
 				if (error.HasError()) {
 					// could not find the column - try to qualify the alias
 					if (!QualifyColumnAlias(*colref)) {
-						if (!allow_throw) {
-							return func;
-						}
 						// no alias found either - throw
 						error.Throw();
 					}
@@ -124,18 +118,10 @@ optional_ptr<CatalogEntry> ExpressionBinder::BindAndQualifyFunction(FunctionExpr
 		}
 		// rebind the function
 		if (!func) {
-			const auto on_entry_not_found =
-			    allow_throw ? OnEntryNotFound::THROW_EXCEPTION : OnEntryNotFound::RETURN_NULL;
-			func = GetCatalogEntry(function.catalog, function.schema, function_lookup, on_entry_not_found);
+			func =
+			    GetCatalogEntry(function.catalog, function.schema, function_lookup, OnEntryNotFound::THROW_EXCEPTION);
 		}
 	}
-
-	return func;
-}
-
-BindResult ExpressionBinder::BindExpression(FunctionExpression &function, idx_t depth,
-                                            unique_ptr<ParsedExpression> &expr_ptr) {
-	auto func = BindAndQualifyFunction(function, true);
 
 	if (func->type != CatalogType::AGGREGATE_FUNCTION_ENTRY &&
 	    (function.distinct || function.filter || !function.order_bys->orders.empty())) {

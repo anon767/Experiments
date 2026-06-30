@@ -6,7 +6,6 @@
 
 namespace duckdb {
 
-namespace {
 struct RegrInterceptState {
 	size_t count;
 	double sum_x;
@@ -59,8 +58,6 @@ struct RegrInterceptOperation {
 		return true;
 	}
 };
-
-} // namespace
 
 AggregateFunction RegrInterceptFun::GetFunction() {
 	return AggregateFunction::BinaryAggregate<RegrInterceptState, double, double, double, RegrInterceptOperation>(

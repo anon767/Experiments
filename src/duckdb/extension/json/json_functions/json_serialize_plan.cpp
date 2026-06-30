@@ -162,11 +162,10 @@ static void JsonSerializePlanFunction(DataChunk &args, ExpressionState &state, V
 			yyjson_mut_obj_add_false(doc, result_obj, "error");
 			yyjson_mut_obj_add_val(doc, result_obj, "plans", plans_arr);
 
-			size_t len_size_t;
+			idx_t len;
 			auto data = yyjson_mut_val_write_opts(result_obj,
 			                                      info.format ? JSONCommon::WRITE_PRETTY_FLAG : JSONCommon::WRITE_FLAG,
-			                                      alc, &len_size_t, nullptr);
-			idx_t len = len_size_t;
+			                                      alc, reinterpret_cast<size_t *>(&len), nullptr);
 			if (data == nullptr) {
 				throw SerializationException(
 				    "Failed to serialize json, perhaps the query contains invalid utf8 characters?");
@@ -186,11 +185,10 @@ static void JsonSerializePlanFunction(DataChunk &args, ExpressionState &state, V
 				yyjson_mut_obj_add_strcpy(doc, result_obj, entry.first.c_str(), entry.second.c_str());
 			}
 
-			size_t len_size_t;
+			idx_t len;
 			auto data = yyjson_mut_val_write_opts(result_obj,
 			                                      info.format ? JSONCommon::WRITE_PRETTY_FLAG : JSONCommon::WRITE_FLAG,
-			                                      alc, &len_size_t, nullptr);
-			idx_t len = len_size_t;
+			                                      alc, reinterpret_cast<size_t *>(&len), nullptr);
 			return StringVector::AddString(result, data, len);
 		}
 	});

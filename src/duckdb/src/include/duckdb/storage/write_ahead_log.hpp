@@ -67,8 +67,7 @@ public:
 	//! Initializes the file of the WAL by creating the file writer.
 	BufferedFileWriter &Initialize();
 
-	//! Write the WAL header.
-	void WriteHeader();
+	void WriteVersion();
 
 	virtual void WriteCreateTable(const TableCatalogEntry &entry);
 	void WriteDropTable(const TableCatalogEntry &entry);

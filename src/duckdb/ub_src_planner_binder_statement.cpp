@@ -30,8 +30,6 @@
 
 #include "src/planner/binder/statement/bind_logical_plan.cpp"
 
-#include "src/planner/binder/statement/bind_merge_into.cpp"
-
 #include "src/planner/binder/statement/bind_pragma.cpp"
 
 #include "src/planner/binder/statement/bind_prepare.cpp"

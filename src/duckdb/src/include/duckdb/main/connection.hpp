@@ -50,6 +50,7 @@ public:
 	DUCKDB_API ~Connection();
 
 	shared_ptr<ClientContext> context;
+	warning_callback_t warning_cb;
 
 public:
 	//! Returns query profiling information for the current query

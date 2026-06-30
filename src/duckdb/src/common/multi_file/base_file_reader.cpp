@@ -21,8 +21,4 @@ double BaseFileReader::GetProgressInFile(ClientContext &context) {
 	return 0;
 }
 
-unique_ptr<BaseStatistics> BaseUnionData::GetStatistics(ClientContext &context, const string &name) {
-	return nullptr;
-}
-
 } // namespace duckdb

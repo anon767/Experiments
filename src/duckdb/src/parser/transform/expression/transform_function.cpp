@@ -27,10 +27,7 @@ void Transformer::TransformWindowDef(duckdb_libpgquery::PGWindowDef &window_spec
 		TransformOrderBy(window_spec.orderClause, expr.orders);
 		for (auto &order : expr.orders) {
 			if (order.expression->GetExpressionType() == ExpressionType::STAR) {
-				auto &star = order.expression->Cast<StarExpression>();
-				if (!star.expr) {
-					throw ParserException("Cannot ORDER BY ALL in a window expression");
-				}
+				throw ParserException("Cannot ORDER BY ALL in a window expression");
 			}
 		}
 	}
@@ -63,7 +60,6 @@ static bool IsExcludableWindowFunction(ExpressionType type) {
 	case ExpressionType::WINDOW_CUME_DIST:
 	case ExpressionType::WINDOW_LEAD:
 	case ExpressionType::WINDOW_LAG:
-	case ExpressionType::WINDOW_FILL:
 		return false;
 	default:
 		throw InternalException("Unknown excludable window type %s", ExpressionTypeToString(type).c_str());
@@ -164,7 +160,6 @@ static bool IsOrderableWindowFunction(ExpressionType type) {
 	case ExpressionType::WINDOW_CUME_DIST:
 	case ExpressionType::WINDOW_LEAD:
 	case ExpressionType::WINDOW_LAG:
-	case ExpressionType::WINDOW_FILL:
 	case ExpressionType::WINDOW_AGGREGATE:
 		return true;
 	case ExpressionType::WINDOW_RANK_DENSE:

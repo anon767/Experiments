@@ -10,9 +10,7 @@
 
 namespace duckdb {
 
-namespace {
-
-hugeint_t GetPreviousPowerOfTen(hugeint_t input) {
+static hugeint_t GetPreviousPowerOfTen(hugeint_t input) {
 	hugeint_t power_of_ten = 1;
 	while (power_of_ten < input) {
 		power_of_ten *= 10;
@@ -62,7 +60,7 @@ hugeint_t MakeNumberNice(hugeint_t input, hugeint_t step, NiceRounding rounding)
 	}
 }
 
-double GetPreviousPowerOfTen(double input) {
+static double GetPreviousPowerOfTen(double input) {
 	double power_of_ten = 1;
 	if (input < 1) {
 		while (power_of_ten > input) {
@@ -427,7 +425,7 @@ unique_ptr<FunctionData> BindEquiWidthFunction(ClientContext &, ScalarFunction &
 }
 
 template <class T, class OP>
-void EquiWidthBinFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void EquiWidthBinFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	static constexpr int64_t MAX_BIN_COUNT = 1000000;
 	auto &min_arg = args.data[0];
 	auto &max_arg = args.data[1];
@@ -469,7 +467,7 @@ void EquiWidthBinFunction(DataChunk &args, ExpressionState &state, Vector &resul
 	VectorOperations::DefaultCast(intermediate_result, result, args.size());
 }
 
-void UnsupportedEquiWidth(DataChunk &args, ExpressionState &state, Vector &) {
+static void UnsupportedEquiWidth(DataChunk &args, ExpressionState &state, Vector &) {
 	throw BinderException(state.expr, "Unsupported type \"%s\" for equi_width_bins", args.data[0].GetType());
 }
 
@@ -481,8 +479,6 @@ unique_ptr<FunctionData> EquiWidthBinDeserialize(Deserializer &deserializer, Sca
 	function.return_type = deserializer.Get<const LogicalType &>();
 	return nullptr;
 }
-
-} // namespace
 
 ScalarFunctionSet EquiWidthBinsFun::GetFunctions() {
 	ScalarFunctionSet functions("equi_width_bins");

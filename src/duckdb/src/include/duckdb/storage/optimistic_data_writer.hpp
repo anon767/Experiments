@@ -15,7 +15,7 @@ class PartialBlockManager;
 
 class OptimisticDataWriter {
 public:
-	OptimisticDataWriter(ClientContext &context, DataTable &table);
+	explicit OptimisticDataWriter(DataTable &table);
 	OptimisticDataWriter(DataTable &table, OptimisticDataWriter &parent);
 	~OptimisticDataWriter();
 
@@ -32,21 +32,14 @@ public:
 	//! Rollback
 	void Rollback();
 
-	//! Return the client context.
-	ClientContext &GetClientContext() {
-		return context;
-	}
-
 private:
 	//! Prepare a write to disk
 	bool PrepareWrite();
 
 private:
-	//! The client context in which we're writing the data.
-	ClientContext &context;
-	//! The table.
+	//! The table
 	DataTable &table;
-	//! The partial block manager, if any.
+	//! The partial block manager, if any was created.
 	unique_ptr<PartialBlockManager> partial_manager;
 };
 

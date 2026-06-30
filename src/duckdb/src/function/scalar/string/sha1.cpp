@@ -5,8 +5,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct SHA1Operator {
 	template <class INPUT_TYPE, class RESULT_TYPE>
 	static RESULT_TYPE Operation(INPUT_TYPE input, Vector &result) {
@@ -21,13 +19,11 @@ struct SHA1Operator {
 	}
 };
 
-void SHA1Function(DataChunk &args, ExpressionState &state, Vector &result) {
+static void SHA1Function(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &input = args.data[0];
 
 	UnaryExecutor::ExecuteString<string_t, string_t, SHA1Operator>(input, result, args.size());
 }
-
-} // namespace
 
 ScalarFunctionSet SHA1Fun::GetFunctions() {
 	ScalarFunctionSet set("sha1");

@@ -3,7 +3,6 @@
 #include "duckdb/common/radix_partitioning.hpp"
 #include "duckdb/common/types/row/tuple_data_iterator.hpp"
 #include "duckdb/storage/buffer_manager.hpp"
-#include "duckdb/common/printer.hpp"
 
 namespace duckdb {
 
@@ -125,24 +124,21 @@ void PartitionedTupleData::Append(PartitionedTupleDataAppendState &state, TupleD
 void PartitionedTupleData::BuildPartitionSel(PartitionedTupleDataAppendState &state, const SelectionVector &append_sel,
                                              const idx_t append_count) const {
 	if (UseFixedSizeMap()) {
-		BuildPartitionSel<true>(state, append_sel, append_count, MaxPartitionIndex());
+		BuildPartitionSel<true>(state, append_sel, append_count);
 	} else {
-		BuildPartitionSel<false>(state, append_sel, append_count, MaxPartitionIndex());
+		BuildPartitionSel<false>(state, append_sel, append_count);
 	}
 }
 
-template <bool FIXED>
+template <bool fixed>
 void PartitionedTupleData::BuildPartitionSel(PartitionedTupleDataAppendState &state, const SelectionVector &append_sel,
-                                             const idx_t append_count, const idx_t max_partition_idx) {
-	using GETTER = TemplatedMapGetter<list_entry_t, FIXED>;
-	auto &partition_entries = state.GetMap<FIXED>();
+                                             const idx_t append_count) {
+	using GETTER = TemplatedMapGetter<list_entry_t, fixed>;
+	auto &partition_entries = state.GetMap<fixed>();
 	const auto partition_indices = FlatVector::GetData<idx_t>(state.partition_indices);
 	partition_entries.clear();
-
-	if (max_partition_idx == 0 || state.partition_indices.GetVectorType() == VectorType::CONSTANT_VECTOR) {
-		partition_entries[partition_indices[0]] = list_entry_t(0, append_count);
-	} else {
-		D_ASSERT(state.partition_indices.GetVectorType() == VectorType::FLAT_VECTOR);
+	switch (state.partition_indices.GetVectorType()) {
+	case VectorType::FLAT_VECTOR:
 		for (idx_t i = 0; i < append_count; i++) {
 			const auto &partition_index = partition_indices[i];
 			auto partition_entry = partition_entries.find(partition_index);
@@ -152,20 +148,20 @@ void PartitionedTupleData::BuildPartitionSel(PartitionedTupleDataAppendState &st
 				GETTER::GetValue(partition_entry).length++;
 			}
 		}
+		break;
+	case VectorType::CONSTANT_VECTOR:
+		partition_entries[partition_indices[0]] = list_entry_t(0, append_count);
+		break;
+	default:
+		throw InternalException("Unexpected VectorType in PartitionedTupleData::Append");
 	}
 
 	// Early out: check if everything belongs to a single partition
 	if (partition_entries.size() == 1) {
 		// This needs to be initialized, even if we go the short path here
-		if (append_sel.IsSet()) {
-			for (sel_t i = 0; i < append_count; i++) {
-				const auto index = append_sel.get_index(i);
-				state.reverse_partition_sel[index] = i;
-			}
-		} else {
-			for (sel_t i = 0; i < append_count; i++) {
-				state.reverse_partition_sel[i] = i;
-			}
+		for (sel_t i = 0; i < append_count; i++) {
+			const auto index = append_sel.get_index(i);
+			state.reverse_partition_sel[index] = i;
 		}
 		return;
 	}
@@ -181,21 +177,12 @@ void PartitionedTupleData::BuildPartitionSel(PartitionedTupleDataAppendState &st
 	// Now initialize a single selection vector that acts as a selection vector for every partition
 	auto &partition_sel = state.partition_sel;
 	auto &reverse_partition_sel = state.reverse_partition_sel;
-	if (append_sel.IsSet()) {
-		for (idx_t i = 0; i < append_count; i++) {
-			const auto index = append_sel[i];
-			const auto &partition_index = partition_indices[i];
-			auto &partition_offset = partition_entries[partition_index].offset;
-			reverse_partition_sel.set_index(index, partition_offset);
-			partition_sel[partition_offset++] = index;
-		}
-	} else {
-		for (idx_t i = 0; i < append_count; i++) {
-			const auto &partition_index = partition_indices[i];
-			auto &partition_offset = partition_entries[partition_index].offset;
-			reverse_partition_sel.set_index(i, partition_offset);
-			partition_sel.set_index(partition_offset++, i);
-		}
+	for (idx_t i = 0; i < append_count; i++) {
+		const auto index = append_sel.get_index(i);
+		const auto &partition_index = partition_indices[i];
+		auto &partition_offset = partition_entries[partition_index].offset;
+		reverse_partition_sel[index] = UnsafeNumericCast<sel_t>(partition_offset);
+		partition_sel[partition_offset++] = UnsafeNumericCast<sel_t>(index);
 	}
 }
 
@@ -337,7 +324,11 @@ idx_t PartitionedTupleData::Count() const {
 }
 
 idx_t PartitionedTupleData::SizeInBytes() const {
-	return data_size;
+	idx_t total_size = 0;
+	for (auto &partition : partitions) {
+		total_size += partition->SizeInBytes();
+	}
+	return total_size;
 }
 
 idx_t PartitionedTupleData::PartitionCount() const {
@@ -355,7 +346,7 @@ void PartitionedTupleData::GetSizesAndCounts(vector<idx_t> &partition_sizes, vec
 }
 
 void PartitionedTupleData::Verify() const {
-#ifdef D_ASSERT_IS_ENABLED
+#ifdef DEBUG
 	idx_t total_count = 0;
 	idx_t total_size = 0;
 	for (auto &partition : partitions) {

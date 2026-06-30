@@ -98,7 +98,7 @@ void Leaf::TransformToNested(ART &art, Node &node) {
 	}
 
 	root.SetGateStatus(GateStatus::GATE_SET);
-	DeprecatedFree(art, node);
+	Node::Free(art, node);
 	node = root;
 }
 
@@ -111,17 +111,17 @@ void Leaf::TransformToDeprecated(ART &art, Node &node) {
 	}
 
 	// Collect all row IDs and free the nested leaf.
-	set<row_t> row_ids;
+	unsafe_vector<row_t> row_ids;
 	Iterator it(art);
 	it.FindMinimum(node);
 	ARTKey empty_key = ARTKey();
 	it.Scan(empty_key, NumericLimits<row_t>().Maximum(), row_ids, false);
-	Node::FreeTree(art, node);
+	Node::Free(art, node);
 	D_ASSERT(row_ids.size() > 1);
 
 	// Create the deprecated leaves.
 	idx_t remaining = row_ids.size();
-	auto row_ids_it = row_ids.begin();
+	idx_t copy_count = 0;
 	reference<Node> ref(node);
 	while (remaining) {
 		ref.get() = Node::GetAllocator(art, LEAF).New();
@@ -132,9 +132,10 @@ void Leaf::TransformToDeprecated(ART &art, Node &node) {
 		leaf.count = UnsafeNumericCast<uint8_t>(min);
 
 		for (uint8_t i = 0; i < leaf.count; i++) {
-			leaf.row_ids[i] = *row_ids_it;
-			row_ids_it++;
+			leaf.row_ids[i] = row_ids[copy_count + i];
 		}
+
+		copy_count += leaf.count;
 		remaining -= leaf.count;
 
 		ref = leaf.ptr;
@@ -148,16 +149,17 @@ void Leaf::TransformToDeprecated(ART &art, Node &node) {
 
 void Leaf::DeprecatedFree(ART &art, Node &node) {
 	D_ASSERT(node.GetType() == LEAF);
+
 	Node next;
 	while (node.HasMetadata()) {
 		next = Node::Ref<Leaf>(art, node, LEAF).ptr;
-		Node::FreeNode(art, node);
+		Node::GetAllocator(art, LEAF).Free(node);
 		node = next;
 	}
 	node.Clear();
 }
 
-bool Leaf::DeprecatedGetRowIds(ART &art, const Node &node, set<row_t> &row_ids, const idx_t max_count) {
+bool Leaf::DeprecatedGetRowIds(ART &art, const Node &node, unsafe_vector<row_t> &row_ids, const idx_t max_count) {
 	D_ASSERT(node.GetType() == LEAF);
 
 	reference<const Node> ref(node);
@@ -168,7 +170,7 @@ bool Leaf::DeprecatedGetRowIds(ART &art, const Node &node, set<row_t> &row_ids, 
 			return false;
 		}
 		for (uint8_t i = 0; i < leaf.count; i++) {
-			row_ids.insert(leaf.row_ids[i]);
+			row_ids.push_back(leaf.row_ids[i]);
 		}
 		ref = leaf.ptr;
 	}

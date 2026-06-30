@@ -26,7 +26,18 @@ unique_ptr<CreateInfo> CreateTypeInfo::Copy() const {
 }
 
 string CreateTypeInfo::ToString() const {
-	string result = GetCreatePrefix("TYPE");
+	string result = "";
+	result += "CREATE";
+	if (on_conflict == OnCreateConflict::REPLACE_ON_CONFLICT) {
+		result += " OR REPLACE ";
+	}
+	if (temporary) {
+		result += " TEMPORARY";
+	}
+	result += " TYPE ";
+	if (on_conflict == OnCreateConflict::IGNORE_ON_CONFLICT) {
+		result += " IF NOT EXISTS ";
+	}
 	result += QualifierToString(temporary ? "" : catalog, schema, name);
 	if (type.id() == LogicalTypeId::ENUM) {
 		auto &values_insert_order = EnumType::GetValuesInsertOrder(type);

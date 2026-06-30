@@ -6,7 +6,6 @@
 
 namespace duckdb {
 
-namespace {
 struct LeastOp {
 	using OP = LessThan;
 
@@ -109,7 +108,7 @@ struct SortKeyLeastGreatest {
 };
 
 template <class T, class OP, class BASE_OP = StandardLeastGreatest<false>>
-void LeastGreatestFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void LeastGreatestFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	if (args.ColumnCount() == 1) {
 		// single input: nop
 		result.Reference(args.data[0]);
@@ -244,13 +243,11 @@ ScalarFunction GetLeastGreatestFunction() {
 }
 
 template <class OP>
-ScalarFunctionSet GetLeastGreatestFunctions() {
+static ScalarFunctionSet GetLeastGreatestFunctions() {
 	ScalarFunctionSet fun_set;
 	fun_set.AddFunction(GetLeastGreatestFunction<OP>());
 	return fun_set;
 }
-
-} // namespace
 
 ScalarFunctionSet LeastFun::GetFunctions() {
 	return GetLeastGreatestFunctions<LeastOp>();

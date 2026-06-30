@@ -1,12 +1,12 @@
-import * as duckdb from '..';
+import * as sqlite3 from '..';
 import * as assert from 'assert';
 import * as fs from 'fs';
 import {TableData} from "..";
 
 describe('exec', function() {
-    var db: duckdb.Database;
+    var db: sqlite3.Database;
     before(function(done) {
-        db = new duckdb.Database(':memory:', done);
+        db = new sqlite3.Database(':memory:', done);
     });
 
     it('Database#exec', function(done) {

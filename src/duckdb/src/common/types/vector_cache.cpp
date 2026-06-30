@@ -101,10 +101,6 @@ public:
 		}
 	}
 
-	optional_ptr<Allocator> GetAllocator() const override {
-		return owned_data.GetAllocator();
-	}
-
 	const LogicalType &GetType() {
 		return type;
 	}

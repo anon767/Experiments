@@ -56,9 +56,6 @@ shared_ptr<ExtraTypeInfo> ExtraTypeInfo::Deserialize(Deserializer &deserializer)
 	case ExtraTypeInfoType::STRUCT_TYPE_INFO:
 		result = StructTypeInfo::Deserialize(deserializer);
 		break;
-	case ExtraTypeInfoType::TEMPLATE_TYPE_INFO:
-		result = TemplateTypeInfo::Deserialize(deserializer);
-		break;
 	case ExtraTypeInfoType::USER_TYPE_INFO:
 		result = UserTypeInfo::Deserialize(deserializer);
 		break;
@@ -189,17 +186,6 @@ void StructTypeInfo::Serialize(Serializer &serializer) const {
 shared_ptr<ExtraTypeInfo> StructTypeInfo::Deserialize(Deserializer &deserializer) {
 	auto result = duckdb::shared_ptr<StructTypeInfo>(new StructTypeInfo());
 	deserializer.ReadPropertyWithDefault<child_list_t<LogicalType>>(200, "child_types", result->child_types);
-	return std::move(result);
-}
-
-void TemplateTypeInfo::Serialize(Serializer &serializer) const {
-	ExtraTypeInfo::Serialize(serializer);
-	serializer.WritePropertyWithDefault<string>(200, "name", name);
-}
-
-shared_ptr<ExtraTypeInfo> TemplateTypeInfo::Deserialize(Deserializer &deserializer) {
-	auto result = duckdb::shared_ptr<TemplateTypeInfo>(new TemplateTypeInfo());
-	deserializer.ReadPropertyWithDefault<string>(200, "name", result->name);
 	return std::move(result);
 }
 

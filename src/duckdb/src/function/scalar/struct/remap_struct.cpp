@@ -9,8 +9,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct RemapColumnInfo {
 	optional_idx index;
 	optional_idx default_index;
@@ -38,12 +36,13 @@ public:
 	}
 };
 
-void RemapNested(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
-                 const vector<RemapColumnInfo> &remap_info);
+static void RemapNested(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
+                        const vector<RemapColumnInfo> &remap_info);
 
-void RemapChildVectors(const Vector &result, const vector<reference<Vector>> &input_vectors,
-                       const vector<reference<Vector>> &result_vectors, const vector<RemapColumnInfo> &remap_info,
-                       Vector &default_vector, const bool has_top_level_null, idx_t count) {
+static void RemapChildVectors(const Vector &result, const vector<reference<Vector>> &input_vectors,
+                              const vector<reference<Vector>> &result_vectors,
+                              const vector<RemapColumnInfo> &remap_info, Vector &default_vector,
+                              const bool has_top_level_null, idx_t count) {
 	// set up the correct vector references
 	for (idx_t i = 0; i < remap_info.size(); i++) {
 		auto &remap = remap_info[i];
@@ -77,8 +76,8 @@ void RemapChildVectors(const Vector &result, const vector<reference<Vector>> &in
 	}
 }
 
-void RemapMap(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
-              const vector<RemapColumnInfo> &remap_info) {
+static void RemapMap(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
+                     const vector<RemapColumnInfo> &remap_info) {
 	auto &input_key_vector = MapVector::GetKeys(input);
 	auto &input_value_vector = MapVector::GetValues(input);
 
@@ -133,8 +132,8 @@ void RemapMap(Vector &input, Vector &default_vector, Vector &result, idx_t resul
 	RemapChildVectors(result, input_vectors, result_vectors, remap_info, default_vector, has_top_level_null, list_size);
 }
 
-void RemapList(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
-               const vector<RemapColumnInfo> &remap_info) {
+static void RemapList(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
+                      const vector<RemapColumnInfo> &remap_info) {
 	auto &input_vector = ListVector::GetEntry(input);
 	auto &result_vector = ListVector::GetEntry(result);
 	auto list_size = ListVector::GetListSize(input);
@@ -182,8 +181,8 @@ void RemapList(Vector &input, Vector &default_vector, Vector &result, idx_t resu
 	RemapChildVectors(result, input_vectors, result_vectors, remap_info, default_vector, has_top_level_null, list_size);
 }
 
-void RemapStruct(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
-                 const vector<RemapColumnInfo> &remap_info) {
+static void RemapStruct(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
+                        const vector<RemapColumnInfo> &remap_info) {
 	auto &input_child_vectors = StructVector::GetEntries(input);
 	auto &result_child_vectors = StructVector::GetEntries(result);
 	if (result_child_vectors.size() != remap_info.size()) {
@@ -227,8 +226,8 @@ void RemapStruct(Vector &input, Vector &default_vector, Vector &result, idx_t re
 	                  result_size);
 }
 
-void RemapNested(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
-                 const vector<RemapColumnInfo> &remap_info) {
+static void RemapNested(Vector &input, Vector &default_vector, Vector &result, idx_t result_size,
+                        const vector<RemapColumnInfo> &remap_info) {
 	auto &source_type = input.GetType();
 	D_ASSERT(source_type.IsNested());
 	switch (source_type.id()) {
@@ -243,7 +242,7 @@ void RemapNested(Vector &input, Vector &default_vector, Vector &result, idx_t re
 	}
 }
 
-void RemapStructFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void RemapStructFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &func_expr = state.expr.Cast<BoundFunctionExpression>();
 	auto &info = func_expr.bind_info->Cast<RemapStructBindData>();
 
@@ -540,8 +539,8 @@ struct RemapEntry {
 	}
 };
 
-unique_ptr<FunctionData> RemapStructBind(ClientContext &context, ScalarFunction &bound_function,
-                                         vector<unique_ptr<Expression>> &arguments) {
+static unique_ptr<FunctionData> RemapStructBind(ClientContext &context, ScalarFunction &bound_function,
+                                                vector<unique_ptr<Expression>> &arguments) {
 	D_ASSERT(arguments.size() == 4);
 	for (idx_t arg_idx = 0; arg_idx < 3; arg_idx++) {
 		auto &arg = arguments[arg_idx];
@@ -621,8 +620,6 @@ unique_ptr<FunctionData> RemapStructBind(ClientContext &context, ScalarFunction 
 
 	return make_uniq<RemapStructBindData>(std::move(remap));
 }
-
-} // namespace
 
 ScalarFunction RemapStructFun::GetFunction() {
 	ScalarFunction remap("remap_struct",

@@ -14,7 +14,5 @@
 
 #include "src/execution/operator/persistent/physical_insert.cpp"
 
-#include "src/execution/operator/persistent/physical_merge_into.cpp"
-
 #include "src/execution/operator/persistent/physical_update.cpp"
 

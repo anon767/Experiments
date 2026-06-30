@@ -6,8 +6,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct NumericRangeInfo {
 	using TYPE = int64_t;
 	using INCREMENT_TYPE = int64_t;
@@ -190,7 +188,7 @@ private:
 };
 
 template <class OP, bool INCLUSIVE_BOUND>
-void ListRangeFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void ListRangeFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	D_ASSERT(result.GetType().id() == LogicalTypeId::LIST);
 
 	RangeInfoStruct<OP, INCLUSIVE_BOUND> info(args);
@@ -240,8 +238,6 @@ void ListRangeFunction(DataChunk &args, ExpressionState &state, Vector &result) 
 
 	result.Verify(args.size());
 }
-
-} // namespace
 
 ScalarFunctionSet ListRangeFun::GetFunctions() {
 	// the arguments and return types are actually set in the binder function

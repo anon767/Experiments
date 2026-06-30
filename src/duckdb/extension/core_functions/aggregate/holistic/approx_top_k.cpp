@@ -7,8 +7,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct ApproxTopKString {
 	ApproxTopKString() : str(UINT32_C(0)), hash(0) {
 	}
@@ -315,8 +313,8 @@ struct ApproxTopKOperation {
 };
 
 template <class T = string_t, class OP = HistogramGenericFunctor>
-void ApproxTopKUpdate(Vector inputs[], AggregateInputData &aggr_input, idx_t input_count, Vector &state_vector,
-                      idx_t count) {
+static void ApproxTopKUpdate(Vector inputs[], AggregateInputData &aggr_input, idx_t input_count, Vector &state_vector,
+                             idx_t count) {
 	using STATE = ApproxTopKState;
 	auto &input = inputs[0];
 	UnifiedVectorFormat sdata;
@@ -341,7 +339,7 @@ void ApproxTopKUpdate(Vector inputs[], AggregateInputData &aggr_input, idx_t inp
 }
 
 template <class OP = HistogramGenericFunctor>
-void ApproxTopKFinalize(Vector &state_vector, AggregateInputData &, Vector &result, idx_t count, idx_t offset) {
+static void ApproxTopKFinalize(Vector &state_vector, AggregateInputData &, Vector &result, idx_t count, idx_t offset) {
 	UnifiedVectorFormat sdata;
 	state_vector.ToUnifiedFormat(count, sdata);
 	auto states = UnifiedVectorFormat::GetData<ApproxTopKState *>(sdata);
@@ -401,8 +399,6 @@ unique_ptr<FunctionData> ApproxTopKBind(ClientContext &context, AggregateFunctio
 	function.return_type = LogicalType::LIST(arguments[0]->return_type);
 	return nullptr;
 }
-
-} // namespace
 
 AggregateFunction ApproxTopKFun::GetFunction() {
 	using STATE = ApproxTopKState;

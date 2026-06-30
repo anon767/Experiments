@@ -7,8 +7,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct UnionValueBindData : public FunctionData {
 	UnionValueBindData() {
 	}
@@ -22,7 +20,7 @@ public:
 	}
 };
 
-void UnionValueFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void UnionValueFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	// Assign the new entries to the result vector
 	UnionVector::GetMember(result, 0).Reference(args.data[0]);
 
@@ -38,8 +36,8 @@ void UnionValueFunction(DataChunk &args, ExpressionState &state, Vector &result)
 	result.Verify(args.size());
 }
 
-unique_ptr<FunctionData> UnionValueBind(ClientContext &context, ScalarFunction &bound_function,
-                                        vector<unique_ptr<Expression>> &arguments) {
+static unique_ptr<FunctionData> UnionValueBind(ClientContext &context, ScalarFunction &bound_function,
+                                               vector<unique_ptr<Expression>> &arguments) {
 
 	if (arguments.size() != 1) {
 		throw BinderException("union_value takes exactly one argument");
@@ -57,8 +55,6 @@ unique_ptr<FunctionData> UnionValueBind(ClientContext &context, ScalarFunction &
 	bound_function.return_type = LogicalType::UNION(std::move(union_members));
 	return make_uniq<VariableReturnBindData>(bound_function.return_type);
 }
-
-} // namespace
 
 ScalarFunction UnionValueFun::GetFunction() {
 	ScalarFunction fun("union_value", {}, LogicalTypeId::UNION, UnionValueFunction, UnionValueBind, nullptr, nullptr);

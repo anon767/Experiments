@@ -69,7 +69,7 @@ static inline UnicodeType UTF8ExtraByteLoop(const int first_pos_seq, int utf8cha
 		AssignInvalidUTF8Reason(invalid_reason, invalid_pos, first_pos_seq, UnicodeInvalidReason::INVALID_UNICODE);
 		return UnicodeType::INVALID;
 	}
-	return UnicodeType::UTF8;
+	return UnicodeType::UNICODE;
 }
 
 UnicodeType Utf8Proc::Analyze(const char *s, size_t len, UnicodeInvalidReason *invalid_reason, size_t *invalid_pos) {
@@ -303,20 +303,16 @@ bool Utf8Proc::CodepointToUtf8(int cp, int &sz, char *c) {
 int Utf8Proc::CodepointLength(int cp) {
 	if (cp <= 0x7F) {
 		return 1;
-	}
-	 if (cp <= 0x7FF) {
+	} else if (cp <= 0x7FF) {
 		return 2;
-	}
-	 if (0xd800 <= cp && cp <= 0xdfff) {
-	 	throw InternalException("invalid code point detected in Utf8Proc::CodepointLength (0xd800 to 0xdfff), likely due to invalid UTF-8");
-	}
-	 if (cp <= 0xFFFF) {
+	} else if (0xd800 <= cp && cp <= 0xdfff) {
+		return -1;
+	} else if (cp <= 0xFFFF) {
 		return 3;
-	}
-	 if (cp <= 0x10FFFF) {
+	} else if (cp <= 0x10FFFF) {
 		return 4;
 	}
-	throw InternalException("invalid code point detected in Utf8Proc::CodepointLength, likely due to invalid UTF-8");
+	return -1;
 }
 
 int32_t Utf8Proc::UTF8ToCodepoint(const char *u_input, int &sz) {
@@ -333,7 +329,7 @@ int32_t Utf8Proc::UTF8ToCodepoint(const char *u_input, int &sz) {
 		return (u0 - 192) * 64 + (u1 - 128);
 	}
 	if (u[0] == 0xed && (u[1] & 0xa0) == 0xa0) {
-		throw InternalException("invalid code point detected in Utf8Proc::UTF8ToCodepoint (0xd800 to 0xdfff), likely due to invalid UTF-8");
+		return -1; // code points, 0xd800 to 0xdfff
 	}
 	unsigned char u2 = u[2];
 	if (u0 >= 224 && u0 <= 239) {
@@ -345,7 +341,7 @@ int32_t Utf8Proc::UTF8ToCodepoint(const char *u_input, int &sz) {
 		sz = 4;
 		return (u0 - 240) * 262144 + (u1 - 128) * 4096 + (u2 - 128) * 64 + (u3 - 128);
 	}
-	throw InternalException("invalid code point detected in Utf8Proc::UTF8ToCodepoint, likely due to invalid UTF-8");
+	return -1;
 }
 
 size_t Utf8Proc::RenderWidth(const char *s, size_t len, size_t pos) {

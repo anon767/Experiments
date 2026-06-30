@@ -35,6 +35,6 @@ public:
 	string ctename;
 	idx_t table_index;
 	idx_t column_count;
-	CorrelatedColumns correlated_columns;
+	vector<CorrelatedColumnInfo> correlated_columns;
 };
 } // namespace duckdb

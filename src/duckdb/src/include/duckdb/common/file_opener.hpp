@@ -10,14 +10,13 @@
 
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/winapi.hpp"
-#include "duckdb/main/setting_info.hpp"
+#include "duckdb/main/settings.hpp"
 
 namespace duckdb {
 
 struct CatalogTransaction;
 class SecretManager;
 class ClientContext;
-class HTTPUtil;
 class Value;
 class Logger;
 

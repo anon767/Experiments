@@ -4,7 +4,8 @@
 
 namespace duckdb {
 
-unique_ptr<MultiFileReaderInterface> JSONMultiFileInfo::CreateInterface(ClientContext &context) {
+unique_ptr<MultiFileReaderInterface>
+JSONMultiFileInfo::InitializeInterface(ClientContext &context, MultiFileReader &reader, MultiFileList &file_list) {
 	return make_uniq<JSONMultiFileInfo>();
 }
 
@@ -576,10 +577,6 @@ optional_idx JSONMultiFileInfo::MaxThreads(const MultiFileBindData &bind_data, c
 	// get the max threads from the bind data (if it is set)
 	auto &json_data = bind_data.bind_data->Cast<JSONScanData>();
 	return json_data.max_threads;
-}
-
-FileGlobInput JSONMultiFileInfo::GetGlobInput() {
-	return FileGlobInput(FileGlobOptions::FALLBACK_GLOB, "json");
 }
 
 } // namespace duckdb

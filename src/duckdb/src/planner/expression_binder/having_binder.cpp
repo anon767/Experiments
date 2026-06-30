@@ -3,6 +3,7 @@
 #include "duckdb/parser/expression/columnref_expression.hpp"
 #include "duckdb/parser/expression/window_expression.hpp"
 #include "duckdb/planner/binder.hpp"
+#include "duckdb/planner/expression_binder/aggregate_binder.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/planner/query_node/bound_select_node.hpp"
 
@@ -90,11 +91,7 @@ BindResult HavingBinder::BindColumnRef(unique_ptr<ParsedExpression> &expr_ptr, i
 }
 
 BindResult HavingBinder::BindWindow(WindowExpression &expr, idx_t depth) {
-	throw BinderException::Unsupported(expr, "HAVING clause cannot contain window functions!");
-}
-
-bool HavingBinder::QualifyColumnAlias(const ColumnRefExpression &colref) {
-	return column_alias_binder.QualifyColumnAlias(colref);
+	return BindResult(BinderException::Unsupported(expr, "HAVING clause cannot contain window functions!"));
 }
 
 } // namespace duckdb

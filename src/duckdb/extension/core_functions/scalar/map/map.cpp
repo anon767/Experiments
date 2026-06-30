@@ -172,24 +172,52 @@ static void MapFunction(DataChunk &args, ExpressionState &, Vector &result) {
 	result.Verify(row_count);
 }
 
-ScalarFunctionSet MapFun::GetFunctions() {
+static unique_ptr<FunctionData> MapBind(ClientContext &, ScalarFunction &bound_function,
+                                        vector<unique_ptr<Expression>> &arguments) {
 
-	ScalarFunction empty_func({}, LogicalType::MAP(LogicalType::SQLNULL, LogicalType::SQLNULL), MapFunction);
-	BaseScalarFunction::SetReturnsError(empty_func);
+	if (arguments.size() != 2 && !arguments.empty()) {
+		MapVector::EvalMapInvalidReason(MapInvalidReason::INVALID_PARAMS);
+	}
 
-	auto key_type = LogicalType::TEMPLATE("K");
-	auto val_type = LogicalType::TEMPLATE("V");
-	ScalarFunction value_func({LogicalType::LIST(key_type), LogicalType::LIST(val_type)},
-	                          LogicalType::MAP(key_type, val_type), MapFunction);
-	BaseScalarFunction::SetReturnsError(value_func);
-	value_func.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
+	bool is_null = false;
+	if (arguments.empty()) {
+		is_null = true;
+	}
+	if (!is_null) {
+		auto key_id = arguments[0]->return_type.id();
+		auto value_id = arguments[1]->return_type.id();
+		if (key_id == LogicalTypeId::SQLNULL || value_id == LogicalTypeId::SQLNULL) {
+			is_null = true;
+		}
+	}
 
-	ScalarFunctionSet set;
+	if (is_null) {
+		bound_function.return_type = LogicalType::MAP(LogicalTypeId::SQLNULL, LogicalTypeId::SQLNULL);
+		return make_uniq<VariableReturnBindData>(bound_function.return_type);
+	}
 
-	set.AddFunction(empty_func);
-	set.AddFunction(value_func);
+	// bind a MAP with key-value pairs
+	D_ASSERT(arguments.size() == 2);
+	if (arguments[0]->return_type.id() != LogicalTypeId::LIST) {
+		MapVector::EvalMapInvalidReason(MapInvalidReason::INVALID_PARAMS);
+	}
+	if (arguments[1]->return_type.id() != LogicalTypeId::LIST) {
+		MapVector::EvalMapInvalidReason(MapInvalidReason::INVALID_PARAMS);
+	}
 
-	return set;
+	auto key_type = ListType::GetChildType(arguments[0]->return_type);
+	auto value_type = ListType::GetChildType(arguments[1]->return_type);
+
+	bound_function.return_type = LogicalType::MAP(key_type, value_type);
+	return make_uniq<VariableReturnBindData>(bound_function.return_type);
+}
+
+ScalarFunction MapFun::GetFunction() {
+	ScalarFunction fun({}, LogicalTypeId::MAP, MapFunction, MapBind);
+	fun.varargs = LogicalType::ANY;
+	BaseScalarFunction::SetReturnsError(fun);
+	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
+	return fun;
 }
 
 } // namespace duckdb

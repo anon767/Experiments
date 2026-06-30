@@ -17,7 +17,7 @@ void LateralBinder::ExtractCorrelatedColumns(Expression &expr) {
 			// add the correlated column info
 			CorrelatedColumnInfo info(bound_colref);
 			if (std::find(correlated_columns.begin(), correlated_columns.end(), info) == correlated_columns.end()) {
-				correlated_columns.AddColumn(std::move(info)); // TODO is adding to the front OK here?
+				correlated_columns.push_back(std::move(info));
 			}
 		}
 	}
@@ -54,7 +54,8 @@ string LateralBinder::UnsupportedAggregateMessage() {
 	return "LATERAL join cannot contain aggregates!";
 }
 
-static void ReduceColumnRefDepth(BoundColumnRefExpression &expr, const CorrelatedColumns &correlated_columns) {
+static void ReduceColumnRefDepth(BoundColumnRefExpression &expr,
+                                 const vector<CorrelatedColumnInfo> &correlated_columns) {
 	// don't need to reduce this
 	if (expr.depth == 0) {
 		return;
@@ -68,7 +69,8 @@ static void ReduceColumnRefDepth(BoundColumnRefExpression &expr, const Correlate
 	}
 }
 
-static void ReduceColumnDepth(CorrelatedColumns &columns, const CorrelatedColumns &affected_columns) {
+static void ReduceColumnDepth(vector<CorrelatedColumnInfo> &columns,
+                              const vector<CorrelatedColumnInfo> &affected_columns) {
 	for (auto &s_correlated : columns) {
 		for (auto &affected : affected_columns) {
 			if (affected == s_correlated) {
@@ -81,7 +83,8 @@ static void ReduceColumnDepth(CorrelatedColumns &columns, const CorrelatedColumn
 
 class ExpressionDepthReducerRecursive : public BoundNodeVisitor {
 public:
-	explicit ExpressionDepthReducerRecursive(const CorrelatedColumns &correlated) : correlated_columns(correlated) {
+	explicit ExpressionDepthReducerRecursive(const vector<CorrelatedColumnInfo> &correlated)
+	    : correlated_columns(correlated) {
 	}
 
 	void VisitExpression(unique_ptr<Expression> &expression) override {
@@ -103,19 +106,20 @@ public:
 		BoundNodeVisitor::VisitBoundTableRef(ref);
 	}
 
-	static void ReduceExpressionSubquery(BoundSubqueryExpression &expr, const CorrelatedColumns &correlated_columns) {
+	static void ReduceExpressionSubquery(BoundSubqueryExpression &expr,
+	                                     const vector<CorrelatedColumnInfo> &correlated_columns) {
 		ReduceColumnDepth(expr.binder->correlated_columns, correlated_columns);
 		ExpressionDepthReducerRecursive recursive(correlated_columns);
 		recursive.VisitBoundQueryNode(*expr.subquery);
 	}
 
 private:
-	const CorrelatedColumns &correlated_columns;
+	const vector<CorrelatedColumnInfo> &correlated_columns;
 };
 
 class ExpressionDepthReducer : public LogicalOperatorVisitor {
 public:
-	explicit ExpressionDepthReducer(const CorrelatedColumns &correlated) : correlated_columns(correlated) {
+	explicit ExpressionDepthReducer(const vector<CorrelatedColumnInfo> &correlated) : correlated_columns(correlated) {
 	}
 
 protected:
@@ -129,10 +133,10 @@ protected:
 		return nullptr;
 	}
 
-	const CorrelatedColumns &correlated_columns;
+	const vector<CorrelatedColumnInfo> &correlated_columns;
 };
 
-void LateralBinder::ReduceExpressionDepth(LogicalOperator &op, const CorrelatedColumns &correlated) {
+void LateralBinder::ReduceExpressionDepth(LogicalOperator &op, const vector<CorrelatedColumnInfo> &correlated) {
 	ExpressionDepthReducer depth_reducer(correlated);
 	depth_reducer.VisitOperator(op);
 }

@@ -8,10 +8,8 @@
 #include "duckdb/storage/checkpoint/write_overflow_strings_to_disk.hpp"
 #include "duckdb/storage/string_uncompressed.hpp"
 #include "duckdb/storage/table/column_data_checkpointer.hpp"
-#include "duckdb/main/settings.hpp"
 
 #include "fsst.h"
-
 #include "miniz_wrapper.hpp"
 
 namespace duckdb {
@@ -646,7 +644,8 @@ void FSSTStorage::StringScanPartial(ColumnSegment &segment, ColumnScanState &sta
 
 	bool enable_fsst_vectors;
 	if (ALLOW_FSST_VECTORS) {
-		enable_fsst_vectors = DBConfig::GetSetting<EnableFSSTVectorsSetting>(segment.db);
+		auto &config = DBConfig::GetConfig(segment.db);
+		enable_fsst_vectors = config.options.enable_fsst_vectors;
 	} else {
 		enable_fsst_vectors = false;
 	}

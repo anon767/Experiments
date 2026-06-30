@@ -86,8 +86,6 @@ struct MergeSortTree {
 	using RunElements = array<RunElement, F>;
 	using Games = array<RunElement, F - 1>;
 
-	static constexpr ElementType INVALID = std::numeric_limits<ElementType>::max();
-
 	struct CompareElements {
 		explicit CompareElements(const CMP &cmp) : cmp(cmp) {
 		}
@@ -124,9 +122,6 @@ struct MergeSortTree {
 	pair<idx_t, idx_t> SelectNth(const SubFrames &frames, idx_t n) const;
 
 	inline ElementType NthElement(idx_t i) const {
-		if (tree.empty() || tree.front().first.empty()) {
-			return INVALID;
-		}
 		return tree.front().first[i];
 	}
 

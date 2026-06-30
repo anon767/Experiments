@@ -4,15 +4,16 @@
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/pair.hpp"
 #include "duckdb/common/vector.hpp"
+#include "duckdb/function/scalar/nested_functions.hpp"
 #include "duckdb/function/cast/bound_cast_data.hpp"
-#include "duckdb/common/types/bignum.hpp"
+#include "duckdb/common/types/varint.hpp"
 
 namespace duckdb {
 
 template <class T>
-static bool StringEnumCastLoop(const string_t *source_data, ValidityMask &source_mask, const LogicalType &source_type,
-                               T *result_data, ValidityMask &result_mask, const LogicalType &result_type, idx_t count,
-                               VectorTryCastData &vector_cast_data, const SelectionVector *sel) {
+bool StringEnumCastLoop(const string_t *source_data, ValidityMask &source_mask, const LogicalType &source_type,
+                        T *result_data, ValidityMask &result_mask, const LogicalType &result_type, idx_t count,
+                        VectorTryCastData &vector_cast_data, const SelectionVector *sel) {
 	for (idx_t i = 0; i < count; i++) {
 		idx_t source_idx = i;
 		if (sel) {
@@ -34,7 +35,7 @@ static bool StringEnumCastLoop(const string_t *source_data, ValidityMask &source
 }
 
 template <class T>
-static bool StringEnumCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
+bool StringEnumCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
 	D_ASSERT(source.GetType().id() == LogicalTypeId::VARCHAR);
 	switch (source.GetVectorType()) {
 	case VectorType::CONSTANT_VECTOR: {
@@ -261,7 +262,7 @@ bool VectorStringToStruct::StringToNestedTypeCastLoop(const string_t *source_dat
 //===--------------------------------------------------------------------===//
 // string -> map casting
 //===--------------------------------------------------------------------===//
-static unique_ptr<FunctionLocalState> InitMapCastLocalState(CastLocalStateParameters &parameters) {
+unique_ptr<FunctionLocalState> InitMapCastLocalState(CastLocalStateParameters &parameters) {
 	auto &cast_data = parameters.cast_data->Cast<MapBoundCastData>();
 	auto result = make_uniq<MapCastLocalState>();
 
@@ -432,7 +433,7 @@ bool VectorStringToArray::StringToNestedTypeCastLoop(const string_t *source_data
 }
 
 template <class T>
-static bool StringToNestedTypeCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
+bool StringToNestedTypeCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
 	D_ASSERT(source.GetType().id() == LogicalTypeId::VARCHAR);
 
 	switch (source.GetVectorType()) {
@@ -466,15 +467,11 @@ BoundCastInfo DefaultCasts::StringCastSwitch(BindCastInput &input, const Logical
 		return BoundCastInfo(&VectorCastHelpers::TryCastErrorLoop<string_t, date_t, duckdb::TryCastErrorMessage>);
 	case LogicalTypeId::TIME:
 		return BoundCastInfo(&VectorCastHelpers::TryCastErrorLoop<string_t, dtime_t, duckdb::TryCastErrorMessage>);
-	case LogicalTypeId::TIME_NS:
-		return BoundCastInfo(&VectorCastHelpers::TryCastErrorLoop<string_t, dtime_ns_t, duckdb::TryCastErrorMessage>);
 	case LogicalTypeId::TIME_TZ:
 		return BoundCastInfo(&VectorCastHelpers::TryCastErrorLoop<string_t, dtime_tz_t, duckdb::TryCastErrorMessage>);
 	case LogicalTypeId::TIMESTAMP:
-		return BoundCastInfo(&VectorCastHelpers::TryCastErrorLoop<string_t, timestamp_t, duckdb::TryCastErrorMessage>);
 	case LogicalTypeId::TIMESTAMP_TZ:
-		return BoundCastInfo(
-		    &VectorCastHelpers::TryCastErrorLoop<string_t, timestamp_tz_t, duckdb::TryCastErrorMessage>);
+		return BoundCastInfo(&VectorCastHelpers::TryCastErrorLoop<string_t, timestamp_t, duckdb::TryCastErrorMessage>);
 	case LogicalTypeId::TIMESTAMP_NS:
 		return BoundCastInfo(
 		    &VectorCastHelpers::TryCastStrictLoop<string_t, timestamp_ns_t, duckdb::TryCastToTimestampNS>);
@@ -515,8 +512,8 @@ BoundCastInfo DefaultCasts::StringCastSwitch(BindCastInput &input, const Logical
 		                     MapBoundCastData::BindMapToMapCast(
 		                         input, LogicalType::MAP(LogicalType::VARCHAR, LogicalType::VARCHAR), target),
 		                     InitMapCastLocalState);
-	case LogicalTypeId::BIGNUM:
-		return BoundCastInfo(&VectorCastHelpers::TryCastStringLoop<string_t, bignum_t, TryCastToBignum>);
+	case LogicalTypeId::VARINT:
+		return BoundCastInfo(&VectorCastHelpers::TryCastStringLoop<string_t, string_t, TryCastToVarInt>);
 	default:
 		return VectorStringCastNumericSwitch(input, source, target);
 	}

@@ -17,8 +17,7 @@ SourceResultType PhysicalAttach::GetData(ExecutionContext &context, DataChunk &c
                                          OperatorSourceInput &input) const {
 	// parse the options
 	auto &config = DBConfig::GetConfig(context.client);
-	// construct the options
-	AttachOptions options(info->options, config.options.access_mode);
+	AttachOptions options(info, config.options.access_mode);
 
 	// get the name and path of the database
 	auto &name = info->name;
@@ -36,7 +35,7 @@ SourceResultType PhysicalAttach::GetData(ExecutionContext &context, DataChunk &c
 	if (info->on_conflict == OnCreateConflict::IGNORE_ON_CONFLICT ||
 	    info->on_conflict == OnCreateConflict::REPLACE_ON_CONFLICT) {
 		// constant-time lookup in the catalog for the db name
-		auto existing_db = db_manager.GetDatabase(name);
+		auto existing_db = db_manager.GetDatabase(context.client, name);
 		if (existing_db) {
 			if ((existing_db->IsReadOnly() && options.access_mode == AccessMode::READ_WRITE) ||
 			    (!existing_db->IsReadOnly() && options.access_mode == AccessMode::READ_ONLY)) {
@@ -51,8 +50,10 @@ SourceResultType PhysicalAttach::GetData(ExecutionContext &context, DataChunk &c
 				existing_db->GetCatalog().SetDefaultTable(options.default_table.schema, options.default_table.name);
 			}
 			if (info->on_conflict == OnCreateConflict::REPLACE_ON_CONFLICT) {
-				// allow custom catalogs to override this behavior
-				if (!existing_db->GetCatalog().HasConflictingAttachOptions(path, options)) {
+				// same path, name and type, DB does not need replacing
+				auto const db_type = options.db_type.empty() ? "duckdb" : options.db_type;
+				if (existing_db->GetCatalog().GetDBPath() == path &&
+				    existing_db->GetCatalog().GetCatalogType() == db_type) {
 					return SourceResultType::FINISHED;
 				}
 			} else {
@@ -61,20 +62,17 @@ SourceResultType PhysicalAttach::GetData(ExecutionContext &context, DataChunk &c
 		}
 	}
 
-	// attach the database.
+	// Get the database type and attach the database.
+	db_manager.GetDatabaseType(context.client, *info, config, options);
 	auto attached_db = db_manager.AttachDatabase(context.client, *info, options);
-	if (!attached_db) {
-		return SourceResultType::FINISHED;
-	}
 
 	//! Initialize the database.
-	attached_db->Initialize(context.client);
+	const auto storage_options = info->GetStorageOptions();
+	attached_db->Initialize(context.client, storage_options);
 	if (!options.default_table.name.empty()) {
 		attached_db->GetCatalog().SetDefaultTable(options.default_table.schema, options.default_table.name);
 	}
 	attached_db->FinalizeLoad(context.client);
-
-	db_manager.FinalizeAttach(context.client, *info, std::move(attached_db));
 	return SourceResultType::FINISHED;
 }
 

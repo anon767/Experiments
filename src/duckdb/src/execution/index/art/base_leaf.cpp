@@ -76,16 +76,15 @@ void Node7Leaf::DeleteByte(ART &art, Node &node, Node &prefix, const uint8_t byt
 		auto remainder = UnsafeNumericCast<idx_t>(row_id.GetRowId()) & AND_LAST_BYTE;
 		remainder |= UnsafeNumericCast<idx_t>(n7.key[0]);
 
-		// Free the prefix (nodes) and inline the remainder.
-		if (prefix.GetType() == NType::PREFIX) {
-			Node::FreeTree(art, prefix);
-			Leaf::New(prefix, UnsafeNumericCast<row_t>(remainder));
-			return;
-		}
+		n7.count--;
+		Node::Free(art, node);
 
-		// Free the Node7Leaf and inline the remainder.
-		Node::FreeNode(art, node);
-		Leaf::New(node, UnsafeNumericCast<row_t>(remainder));
+		if (prefix.GetType() == NType::PREFIX) {
+			Node::Free(art, prefix);
+			Leaf::New(prefix, UnsafeNumericCast<row_t>(remainder));
+		} else {
+			Leaf::New(node, UnsafeNumericCast<row_t>(remainder));
+		}
 	}
 }
 
@@ -99,7 +98,8 @@ void Node7Leaf::ShrinkNode15Leaf(ART &art, Node &node7_leaf, Node &node15_leaf) 
 		n7.key[i] = n15.key[i];
 	}
 
-	Node::FreeNode(art, node15_leaf);
+	n15.count = 0;
+	Node::Free(art, node15_leaf);
 }
 
 //===--------------------------------------------------------------------===//
@@ -139,7 +139,8 @@ void Node15Leaf::GrowNode7Leaf(ART &art, Node &node15_leaf, Node &node7_leaf) {
 		n15.key[i] = n7.key[i];
 	}
 
-	Node::FreeNode(art, node7_leaf);
+	n7.count = 0;
+	Node::Free(art, node7_leaf);
 }
 
 void Node15Leaf::ShrinkNode256Leaf(ART &art, Node &node15_leaf, Node &node256_leaf) {
@@ -155,7 +156,7 @@ void Node15Leaf::ShrinkNode256Leaf(ART &art, Node &node15_leaf, Node &node256_le
 		}
 	}
 
-	Node::FreeNode(art, node256_leaf);
+	Node::Free(art, node256_leaf);
 }
 
 } // namespace duckdb

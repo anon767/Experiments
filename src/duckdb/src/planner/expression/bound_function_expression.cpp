@@ -39,10 +39,7 @@ bool BoundFunctionExpression::IsFoldable() const {
 			}
 		}
 	}
-	if (function.stability == FunctionStability::VOLATILE) {
-		return false;
-	}
-	return Expression::IsFoldable();
+	return function.stability == FunctionStability::VOLATILE ? false : Expression::IsFoldable();
 }
 
 bool BoundFunctionExpression::CanThrow() const {

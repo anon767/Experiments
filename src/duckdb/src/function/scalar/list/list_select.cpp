@@ -8,8 +8,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct SetSelectionVectorSelect {
 	static void SetSelectionVector(SelectionVector &selection_vector, ValidityMask &validity_mask,
 	                               ValidityMask &input_validity, Vector &selection_entry, idx_t child_idx,
@@ -71,7 +69,7 @@ struct SetSelectionVectorWhere {
 };
 
 template <class OP>
-void ListSelectFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void ListSelectFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	D_ASSERT(args.data.size() == 2);
 	Vector &list = args.data[0];
 	Vector &selection_list = args.data[1];
@@ -141,26 +139,44 @@ void ListSelectFunction(DataChunk &args, ExpressionState &state, Vector &result)
 		}
 		result_data[j].length = offset - result_data[j].offset;
 	}
-	result_entry.Slice(input_entry, result_selection_vec, offset);
+	result_entry.Slice(input_entry, result_selection_vec, count);
 	result_entry.Flatten(offset);
 	ListVector::SetListSize(result, offset);
 	FlatVector::SetValidity(result_entry, entry_validity_mask);
 	result.SetVectorType(args.AllConstant() ? VectorType::CONSTANT_VECTOR : VectorType::FLAT_VECTOR);
 }
 
-} // namespace
+static unique_ptr<FunctionData> ListSelectBind(ClientContext &context, ScalarFunction &bound_function,
+                                               vector<unique_ptr<Expression>> &arguments) {
+	D_ASSERT(bound_function.arguments.size() == 2);
 
+	// If the first argument is an array, cast it to a list
+	arguments[0] = BoundCastExpression::AddArrayCastToList(context, std::move(arguments[0]));
+
+	LogicalType child_type;
+	if (arguments[0]->return_type == LogicalTypeId::UNKNOWN || arguments[1]->return_type == LogicalTypeId::UNKNOWN) {
+		bound_function.arguments[0] = LogicalTypeId::UNKNOWN;
+		bound_function.return_type = LogicalType::SQLNULL;
+		return make_uniq<VariableReturnBindData>(bound_function.return_type);
+	}
+
+	D_ASSERT(LogicalTypeId::LIST == arguments[0]->return_type.id() ||
+	         LogicalTypeId::SQLNULL == arguments[0]->return_type.id());
+
+	bound_function.return_type = arguments[0]->return_type;
+	return make_uniq<VariableReturnBindData>(bound_function.return_type);
+}
 ScalarFunction ListWhereFun::GetFunction() {
-	auto fun =
-	    ScalarFunction({LogicalType::LIST(LogicalType::TEMPLATE("T")), LogicalType::LIST(LogicalType::BOOLEAN)},
-	                   LogicalType::LIST(LogicalType::TEMPLATE("T")), ListSelectFunction<SetSelectionVectorWhere>);
+	auto fun = ScalarFunction({LogicalType::LIST(LogicalTypeId::ANY), LogicalType::LIST(LogicalType::BOOLEAN)},
+	                          LogicalType::LIST(LogicalTypeId::ANY), ListSelectFunction<SetSelectionVectorWhere>,
+	                          ListSelectBind);
 	return fun;
 }
 
 ScalarFunction ListSelectFun::GetFunction() {
-	auto fun =
-	    ScalarFunction({LogicalType::LIST(LogicalType::TEMPLATE("T")), LogicalType::LIST(LogicalType::BIGINT)},
-	                   LogicalType::LIST(LogicalType::TEMPLATE("T")), ListSelectFunction<SetSelectionVectorSelect>);
+	auto fun = ScalarFunction({LogicalType::LIST(LogicalTypeId::ANY), LogicalType::LIST(LogicalType::BIGINT)},
+	                          LogicalType::LIST(LogicalTypeId::ANY), ListSelectFunction<SetSelectionVectorSelect>,
+	                          ListSelectBind);
 	return fun;
 }
 

@@ -2,13 +2,13 @@
   "name": "duckdb",
   "main": "./lib/duckdb.js",
   "types": "./lib/duckdb.d.ts",
-  "version": "0.0.2-dev5.0",
+  "version": "1.3.3",
   "description": "DuckDB node.js API",
   "gypfile": true,
   "dependencies": {
     "@mapbox/node-pre-gyp": "^2.0.0",
     "node-addon-api": "^7.0.0",
-    "node-gyp": "^9.4.1"
+    "node-gyp": "^9.3.0"
   },
   "binary": {
     "module_name": "duckdb",
@@ -23,6 +23,7 @@
     "pack": "node-pre-gyp package"
   },
   "directories": {
+    "example": "examples",
     "lib": "lib",
     "test": "test"
   },

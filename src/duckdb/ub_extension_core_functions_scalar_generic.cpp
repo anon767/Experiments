@@ -12,8 +12,6 @@
 
 #include "extension/core_functions/scalar/generic/least.cpp"
 
-#include "extension/core_functions/scalar/generic/replace_type.cpp"
-
 #include "extension/core_functions/scalar/generic/stats.cpp"
 
 #include "extension/core_functions/scalar/generic/typeof.cpp"

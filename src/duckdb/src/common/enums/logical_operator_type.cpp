@@ -70,8 +70,6 @@ string LogicalOperatorToString(LogicalOperatorType type) {
 		return "DELETE";
 	case LogicalOperatorType::LOGICAL_UPDATE:
 		return "UPDATE";
-	case LogicalOperatorType::LOGICAL_MERGE_INTO:
-		return "MERGE_INTO";
 	case LogicalOperatorType::LOGICAL_PREPARE:
 		return "PREPARE";
 	case LogicalOperatorType::LOGICAL_DUMMY_SCAN:

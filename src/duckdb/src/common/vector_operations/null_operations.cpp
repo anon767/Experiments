@@ -10,7 +10,7 @@
 namespace duckdb {
 
 template <bool INVERSE>
-static void IsNullLoop(Vector &input, Vector &result, idx_t count) {
+void IsNullLoop(Vector &input, Vector &result, idx_t count) {
 	D_ASSERT(result.GetType() == LogicalType::BOOLEAN);
 
 	if (input.GetVectorType() == VectorType::CONSTANT_VECTOR) {

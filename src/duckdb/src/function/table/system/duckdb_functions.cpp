@@ -258,6 +258,9 @@ struct MacroExtractor {
 			auto &colref = param->Cast<ColumnRefExpression>();
 			results.emplace_back(colref.GetColumnName());
 		}
+		for (auto &param_entry : macro_entry.default_parameters) {
+			results.emplace_back(param_entry.first);
+		}
 		return results;
 	}
 
@@ -265,8 +268,10 @@ struct MacroExtractor {
 		vector<Value> results;
 		auto &macro_entry = *entry.macros[offset];
 		for (idx_t i = 0; i < macro_entry.parameters.size(); i++) {
-			const auto has_type = !macro_entry.types.empty() && macro_entry.types[i] != LogicalType::UNKNOWN;
-			results.emplace_back(has_type ? macro_entry.types[i].ToString() : Value(LogicalType::VARCHAR));
+			results.emplace_back(LogicalType::VARCHAR);
+		}
+		for (idx_t i = 0; i < macro_entry.default_parameters.size(); i++) {
+			results.emplace_back(LogicalType::VARCHAR);
 		}
 		return Value::LIST(LogicalType::VARCHAR, std::move(results));
 	}
@@ -275,7 +280,10 @@ struct MacroExtractor {
 		vector<LogicalType> results;
 		auto &macro_entry = *entry.macros[offset];
 		for (idx_t i = 0; i < macro_entry.parameters.size(); i++) {
-			results.emplace_back(macro_entry.types.empty() ? LogicalType::UNKNOWN : macro_entry.types[i]);
+			results.emplace_back(LogicalType::UNKNOWN);
+		}
+		for (idx_t i = 0; i < macro_entry.default_parameters.size(); i++) {
+			results.emplace_back(LogicalType::UNKNOWN);
 		}
 		return results;
 	}
@@ -321,6 +329,9 @@ struct TableMacroExtractor {
 			auto &colref = param->Cast<ColumnRefExpression>();
 			results.emplace_back(colref.GetColumnName());
 		}
+		for (auto &param_entry : macro_entry.default_parameters) {
+			results.emplace_back(param_entry.first);
+		}
 		return results;
 	}
 
@@ -328,8 +339,10 @@ struct TableMacroExtractor {
 		vector<Value> results;
 		auto &macro_entry = *entry.macros[offset];
 		for (idx_t i = 0; i < macro_entry.parameters.size(); i++) {
-			const auto has_type = !macro_entry.types.empty() && macro_entry.types[i] != LogicalType::UNKNOWN;
-			results.emplace_back(has_type ? macro_entry.types[i].ToString() : Value(LogicalType::VARCHAR));
+			results.emplace_back(LogicalType::VARCHAR);
+		}
+		for (idx_t i = 0; i < macro_entry.default_parameters.size(); i++) {
+			results.emplace_back(LogicalType::VARCHAR);
 		}
 		return Value::LIST(LogicalType::VARCHAR, std::move(results));
 	}
@@ -338,7 +351,10 @@ struct TableMacroExtractor {
 		vector<LogicalType> results;
 		auto &macro_entry = *entry.macros[offset];
 		for (idx_t i = 0; i < macro_entry.parameters.size(); i++) {
-			results.emplace_back(macro_entry.types.empty() ? LogicalType::UNKNOWN : macro_entry.types[i]);
+			results.emplace_back(LogicalType::UNKNOWN);
+		}
+		for (idx_t i = 0; i < macro_entry.default_parameters.size(); i++) {
+			results.emplace_back(LogicalType::UNKNOWN);
 		}
 		return results;
 	}

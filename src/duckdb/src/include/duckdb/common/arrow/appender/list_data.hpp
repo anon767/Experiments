@@ -28,7 +28,7 @@ public:
 		input.ToUnifiedFormat(input_size, format);
 		idx_t size = to - from;
 		vector<sel_t> child_indices;
-		append_data.AppendValidity(format, from, to);
+		AppendValidity(append_data, format, from, to);
 		AppendOffsets(append_data, format, from, to, child_indices);
 
 		// append the child vector of the list

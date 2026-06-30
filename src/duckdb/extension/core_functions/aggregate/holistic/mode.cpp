@@ -21,7 +21,6 @@ namespace std {} // namespace std
 
 namespace duckdb {
 
-namespace {
 struct ModeAttr {
 	ModeAttr() : count(0), first_row(std::numeric_limits<idx_t>::max()) {
 	}
@@ -234,12 +233,15 @@ struct BaseModeFunction {
 	}
 
 	template <class STATE, class OP>
-	static void Combine(const STATE &source, STATE &target, AggregateInputData &aggr_input_data) {
+	static void Combine(const STATE &source, STATE &target, AggregateInputData &) {
 		if (!source.frequency_map) {
 			return;
 		}
 		if (!target.frequency_map) {
-			target.frequency_map = TYPE_OP::CreateEmpty(aggr_input_data.allocator);
+			// Copy - don't destroy! Otherwise windowing will break.
+			target.frequency_map = new typename STATE::Counts(*source.frequency_map);
+			target.count = source.count;
+			return;
 		}
 		for (auto &val : *source.frequency_map) {
 			auto &i = (*target.frequency_map)[val.first];
@@ -464,8 +466,6 @@ unique_ptr<FunctionData> BindModeAggregate(ClientContext &context, AggregateFunc
 	return nullptr;
 }
 
-} // namespace
-
 AggregateFunctionSet ModeFun::GetFunctions() {
 	AggregateFunctionSet mode("mode");
 	mode.AddFunction(AggregateFunction({LogicalTypeId::ANY}, LogicalTypeId::ANY, nullptr, nullptr, nullptr, nullptr,
@@ -476,10 +476,8 @@ AggregateFunctionSet ModeFun::GetFunctions() {
 //===--------------------------------------------------------------------===//
 // Entropy
 //===--------------------------------------------------------------------===//
-namespace {
-
 template <class STATE>
-double FinalizeEntropy(STATE &state) {
+static double FinalizeEntropy(STATE &state) {
 	if (!state.frequency_map) {
 		return 0;
 	}
@@ -564,8 +562,6 @@ unique_ptr<FunctionData> BindEntropyAggregate(ClientContext &context, AggregateF
 	function.name = "entropy";
 	return nullptr;
 }
-
-} // namespace
 
 AggregateFunctionSet EntropyFun::GetFunctions() {
 	AggregateFunctionSet entropy("entropy");

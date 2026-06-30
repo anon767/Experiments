@@ -7,7 +7,7 @@
 
 namespace duckdb {
 
-static void ListResizeFunction(DataChunk &args, ExpressionState &, Vector &result) {
+void ListResizeFunction(DataChunk &args, ExpressionState &, Vector &result) {
 
 	// Early-out, if the return value is a constant NULL.
 	if (result.GetType().id() == LogicalTypeId::SQLNULL) {

@@ -2,7 +2,6 @@
 
 #include "duckdb/common/enum_util.hpp"
 #include "duckdb/main/query_profiler.hpp"
-#include "duckdb/logging/log_manager.hpp"
 
 #include "yyjson.hpp"
 
@@ -53,9 +52,7 @@ profiler_settings_t ProfilingInfo::DefaultSettings() {
 	        MetricsType::OPERATOR_TIMING,
 	        MetricsType::RESULT_SET_SIZE,
 	        MetricsType::LATENCY,
-	        MetricsType::ROWS_RETURNED,
-	        MetricsType::TOTAL_BYTES_READ,
-	        MetricsType::TOTAL_BYTES_WRITTEN};
+	        MetricsType::ROWS_RETURNED};
 }
 
 profiler_settings_t ProfilingInfo::DefaultRootSettings() {
@@ -100,8 +97,6 @@ void ProfilingInfo::ResetMetrics() {
 		case MetricsType::OPERATOR_ROWS_SCANNED:
 		case MetricsType::SYSTEM_PEAK_BUFFER_MEMORY:
 		case MetricsType::SYSTEM_PEAK_TEMP_DIR_SIZE:
-		case MetricsType::TOTAL_BYTES_READ:
-		case MetricsType::TOTAL_BYTES_WRITTEN:
 			metrics[metric] = Value::CreateValue<uint64_t>(0);
 			break;
 		case MetricsType::EXTRA_INFO:
@@ -170,16 +165,6 @@ string ProfilingInfo::GetMetricAsString(const MetricsType metric) const {
 	return metrics.at(metric).ToString();
 }
 
-void ProfilingInfo::WriteMetricsToLog(ClientContext &context) {
-	auto &logger = Logger::Get(context);
-	if (logger.ShouldLog(MetricsLogType::NAME, MetricsLogType::LEVEL)) {
-		for (auto &metric : settings) {
-			logger.WriteLog(MetricsLogType::NAME, MetricsLogType::LEVEL,
-			                MetricsLogType::ConstructLogMessage(metric, metrics[metric]));
-		}
-	}
-}
-
 void ProfilingInfo::WriteMetricsToJSON(yyjson_mut_doc *doc, yyjson_mut_val *dest) {
 	for (auto &metric : settings) {
 		auto metric_str = StringUtil::Lower(EnumUtil::ToString(metric));
@@ -238,9 +223,7 @@ void ProfilingInfo::WriteMetricsToJSON(yyjson_mut_doc *doc, yyjson_mut_val *dest
 		case MetricsType::CUMULATIVE_ROWS_SCANNED:
 		case MetricsType::OPERATOR_ROWS_SCANNED:
 		case MetricsType::SYSTEM_PEAK_BUFFER_MEMORY:
-		case MetricsType::SYSTEM_PEAK_TEMP_DIR_SIZE:
-		case MetricsType::TOTAL_BYTES_READ:
-		case MetricsType::TOTAL_BYTES_WRITTEN: {
+		case MetricsType::SYSTEM_PEAK_TEMP_DIR_SIZE: {
 			yyjson_mut_obj_add_uint(doc, dest, key_ptr, metrics[metric].GetValue<uint64_t>());
 			break;
 		}

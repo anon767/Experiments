@@ -26,7 +26,7 @@ public:
 
 	//! The base table to update
 	TableCatalogEntry &table;
-	//! projection index
+	//! table catalog index
 	idx_t table_index;
 	//! if returning option is used, return the update chunk
 	bool return_chunk;

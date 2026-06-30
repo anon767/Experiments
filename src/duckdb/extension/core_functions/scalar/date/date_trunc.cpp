@@ -10,8 +10,6 @@
 
 namespace duckdb {
 
-namespace {
-
 struct DateTrunc {
 	template <class TA, class TR, class OP>
 	static inline TR UnaryFunction(TA input) {
@@ -460,7 +458,7 @@ interval_t DateTrunc::MicrosecondOperator::Operation(interval_t input) {
 }
 
 template <class TA, class TR>
-TR TruncateElement(DatePartSpecifier type, TA element) {
+static TR TruncateElement(DatePartSpecifier type, TA element) {
 	if (!Value::IsFinite(element)) {
 		return Cast::template Operation<TA, TR>(element);
 	}
@@ -513,7 +511,7 @@ struct DateTruncBinaryOperator {
 };
 
 template <typename TA, typename TR>
-void DateTruncUnaryExecutor(DatePartSpecifier type, Vector &left, Vector &result, idx_t count) {
+static void DateTruncUnaryExecutor(DatePartSpecifier type, Vector &left, Vector &result, idx_t count) {
 	switch (type) {
 	case DatePartSpecifier::MILLENNIUM:
 		DateTrunc::UnaryExecute<TA, TR, DateTrunc::MillenniumOperator>(left, result, count);
@@ -569,7 +567,7 @@ void DateTruncUnaryExecutor(DatePartSpecifier type, Vector &left, Vector &result
 }
 
 template <typename TA, typename TR>
-void DateTruncFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void DateTruncFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	D_ASSERT(args.ColumnCount() == 2);
 	auto &part_arg = args.data[0];
 	auto &date_arg = args.data[1];
@@ -590,7 +588,7 @@ void DateTruncFunction(DataChunk &args, ExpressionState &state, Vector &result) 
 }
 
 template <class TA, class TR, class OP>
-unique_ptr<BaseStatistics> DateTruncStatistics(vector<BaseStatistics> &child_stats) {
+static unique_ptr<BaseStatistics> DateTruncStatistics(vector<BaseStatistics> &child_stats) {
 	// we can only propagate date stats if the child has stats
 	auto &nstats = child_stats[1];
 	if (!NumericStats::HasMinMax(nstats)) {
@@ -612,18 +610,17 @@ unique_ptr<BaseStatistics> DateTruncStatistics(vector<BaseStatistics> &child_sta
 	auto result = NumericStats::CreateEmpty(min_value.type());
 	NumericStats::SetMin(result, min_value);
 	NumericStats::SetMax(result, max_value);
-
-	result.CombineValidity(child_stats[0], child_stats[1]);
+	result.CopyValidity(child_stats[0]);
 	return result.ToUnique();
 }
 
 template <class TA, class TR, class OP>
-unique_ptr<BaseStatistics> PropagateDateTruncStatistics(ClientContext &context, FunctionStatisticsInput &input) {
+static unique_ptr<BaseStatistics> PropagateDateTruncStatistics(ClientContext &context, FunctionStatisticsInput &input) {
 	return DateTruncStatistics<TA, TR, OP>(input.child_stats);
 }
 
 template <typename TA, typename TR>
-function_statistics_t DateTruncStats(DatePartSpecifier type) {
+static function_statistics_t DateTruncStats(DatePartSpecifier type) {
 	switch (type) {
 	case DatePartSpecifier::MILLENNIUM:
 		return PropagateDateTruncStatistics<TA, TR, DateTrunc::MillenniumOperator>;
@@ -664,8 +661,8 @@ function_statistics_t DateTruncStats(DatePartSpecifier type) {
 	}
 }
 
-unique_ptr<FunctionData> DateTruncBind(ClientContext &context, ScalarFunction &bound_function,
-                                       vector<unique_ptr<Expression>> &arguments) {
+static unique_ptr<FunctionData> DateTruncBind(ClientContext &context, ScalarFunction &bound_function,
+                                              vector<unique_ptr<Expression>> &arguments) {
 	if (!arguments[0]->IsFoldable()) {
 		return nullptr;
 	}
@@ -722,8 +719,6 @@ unique_ptr<FunctionData> DateTruncBind(ClientContext &context, ScalarFunction &b
 
 	return nullptr;
 }
-
-} // namespace
 
 ScalarFunctionSet DateTruncFun::GetFunctions() {
 	ScalarFunctionSet date_trunc("date_trunc");

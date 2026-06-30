@@ -27,8 +27,7 @@ enum class ExtraTypeInfoType : uint8_t {
 	AGGREGATE_STATE_TYPE_INFO = 8,
 	ARRAY_TYPE_INFO = 9,
 	ANY_TYPE_INFO = 10,
-	INTEGER_LITERAL_TYPE_INFO = 11,
-	TEMPLATE_TYPE_INFO = 12
+	INTEGER_LITERAL_TYPE_INFO = 11
 };
 
 struct ExtraTypeInfo {
@@ -51,7 +50,6 @@ public:
 	virtual void Serialize(Serializer &serializer) const;
 	static shared_ptr<ExtraTypeInfo> Deserialize(Deserializer &source);
 	virtual shared_ptr<ExtraTypeInfo> Copy() const;
-	virtual shared_ptr<ExtraTypeInfo> DeepCopy() const;
 
 	template <class TARGET>
 	TARGET &Cast() {
@@ -112,7 +110,6 @@ public:
 	void Serialize(Serializer &serializer) const override;
 	static shared_ptr<ExtraTypeInfo> Deserialize(Deserializer &source);
 	shared_ptr<ExtraTypeInfo> Copy() const override;
-	shared_ptr<ExtraTypeInfo> DeepCopy() const override;
 
 protected:
 	bool EqualsInternal(ExtraTypeInfo *other_p) const override;
@@ -130,7 +127,6 @@ public:
 	void Serialize(Serializer &serializer) const override;
 	static shared_ptr<ExtraTypeInfo> Deserialize(Deserializer &deserializer);
 	shared_ptr<ExtraTypeInfo> Copy() const override;
-	shared_ptr<ExtraTypeInfo> DeepCopy() const override;
 
 protected:
 	bool EqualsInternal(ExtraTypeInfo *other_p) const override;
@@ -218,7 +214,6 @@ public:
 	void Serialize(Serializer &serializer) const override;
 	static shared_ptr<ExtraTypeInfo> Deserialize(Deserializer &reader);
 	shared_ptr<ExtraTypeInfo> Copy() const override;
-	shared_ptr<ExtraTypeInfo> DeepCopy() const override;
 
 protected:
 	bool EqualsInternal(ExtraTypeInfo *other_p) const override;
@@ -234,7 +229,6 @@ public:
 	void Serialize(Serializer &serializer) const override;
 	static shared_ptr<ExtraTypeInfo> Deserialize(Deserializer &source);
 	shared_ptr<ExtraTypeInfo> Copy() const override;
-	shared_ptr<ExtraTypeInfo> DeepCopy() const override;
 
 protected:
 	bool EqualsInternal(ExtraTypeInfo *other_p) const override;
@@ -258,24 +252,6 @@ protected:
 
 private:
 	IntegerLiteralTypeInfo();
-};
-
-struct TemplateTypeInfo : public ExtraTypeInfo {
-
-	explicit TemplateTypeInfo(string name_p);
-
-	// The name of the template, e.g. `T`, or `KEY_TYPE`. Used to distinguish between different template types within
-	// the same function. The binder tries to resolve all templates with the same name to the same concrete type.
-	string name;
-
-public:
-	void Serialize(Serializer &serializer) const override;
-	static shared_ptr<ExtraTypeInfo> Deserialize(Deserializer &source);
-	shared_ptr<ExtraTypeInfo> Copy() const override;
-
-protected:
-	bool EqualsInternal(ExtraTypeInfo *other_p) const override;
-	TemplateTypeInfo();
 };
 
 } // namespace duckdb

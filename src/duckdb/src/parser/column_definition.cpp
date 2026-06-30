@@ -122,13 +122,16 @@ bool ColumnDefinition::Generated() const {
 // Generated Columns (VIRTUAL)
 //===--------------------------------------------------------------------===//
 
-static void VerifyColumnRefs(const ParsedExpression &expr) {
-	ParsedExpressionIterator::VisitExpression<ColumnRefExpression>(expr, [&](const ColumnRefExpression &column_ref) {
+static void VerifyColumnRefs(ParsedExpression &expr) {
+	if (expr.GetExpressionType() == ExpressionType::COLUMN_REF) {
+		auto &column_ref = expr.Cast<ColumnRefExpression>();
 		if (column_ref.IsQualified()) {
 			throw ParserException(
 			    "Qualified (tbl.name) column references are not allowed inside of generated column expressions");
 		}
-	});
+	}
+	ParsedExpressionIterator::EnumerateChildren(
+	    expr, [&](const ParsedExpression &child) { VerifyColumnRefs((ParsedExpression &)child); });
 }
 
 static void InnerGetListOfDependencies(ParsedExpression &expr, vector<string> &dependencies) {

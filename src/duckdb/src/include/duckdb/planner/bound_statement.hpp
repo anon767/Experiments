@@ -9,7 +9,6 @@
 #pragma once
 
 #include "duckdb/common/string.hpp"
-#include "duckdb/common/unique_ptr.hpp"
 #include "duckdb/common/vector.hpp"
 
 namespace duckdb {

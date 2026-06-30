@@ -19,7 +19,6 @@
 #include "duckdb/planner/operator/logical_dependent_join.hpp"
 #include "duckdb/planner/subquery/recursive_dependent_join_planner.hpp"
 #include "duckdb/function/scalar/generic_functions.hpp"
-#include "duckdb/main/settings.hpp"
 
 namespace duckdb {
 
@@ -79,7 +78,8 @@ static unique_ptr<Expression> PlanUncorrelatedSubquery(Binder &binder, BoundSubq
 		D_ASSERT(bindings.size() == 1);
 		idx_t table_idx = bindings[0].table_index;
 
-		bool error_on_multiple_rows = DBConfig::GetSetting<ScalarSubqueryErrorOnMultipleRowsSetting>(binder.context);
+		auto &config = ClientConfig::GetConfig(binder.context);
+		bool error_on_multiple_rows = config.scalar_subquery_error_on_multiple_rows;
 
 		// we push an aggregate that returns the FIRST element
 		vector<unique_ptr<Expression>> expressions;
@@ -167,15 +167,10 @@ static unique_ptr<Expression> PlanUncorrelatedSubquery(Binder &binder, BoundSubq
 			JoinCondition cond;
 			cond.left = std::move(expr.children[child_idx]);
 			auto &child_type = expr.child_types[child_idx];
-			auto &compare_type = expr.child_targets[child_idx];
 			cond.right = BoundCastExpression::AddDefaultCastToType(
-			    make_uniq<BoundColumnRefExpression>(child_type, plan_columns[child_idx]), compare_type);
+			    make_uniq<BoundColumnRefExpression>(child_type, plan_columns[child_idx]),
+			    expr.child_targets[child_idx]);
 			cond.comparison = expr.comparison_type;
-
-			// push collations
-			ExpressionBinder::PushCollation(binder.context, cond.left, compare_type);
-			ExpressionBinder::PushCollation(binder.context, cond.right, compare_type);
-
 			join->conditions.push_back(std::move(cond));
 		}
 		root = std::move(join);
@@ -186,10 +181,9 @@ static unique_ptr<Expression> PlanUncorrelatedSubquery(Binder &binder, BoundSubq
 	}
 }
 
-static unique_ptr<LogicalDependentJoin> CreateDuplicateEliminatedJoin(const CorrelatedColumns &correlated_columns,
-                                                                      JoinType join_type,
-                                                                      unique_ptr<LogicalOperator> original_plan,
-                                                                      bool perform_delim) {
+static unique_ptr<LogicalDependentJoin>
+CreateDuplicateEliminatedJoin(const vector<CorrelatedColumnInfo> &correlated_columns, JoinType join_type,
+                              unique_ptr<LogicalOperator> original_plan, bool perform_delim) {
 	auto delim_join = make_uniq<LogicalDependentJoin>(join_type);
 	delim_join->correlated_columns = correlated_columns;
 	delim_join->perform_delim = perform_delim;
@@ -217,7 +211,7 @@ static bool PerformDelimOnType(const LogicalType &type) {
 	return true;
 }
 
-static bool PerformDuplicateElimination(Binder &binder, CorrelatedColumns &correlated_columns) {
+static bool PerformDuplicateElimination(Binder &binder, vector<CorrelatedColumnInfo> &correlated_columns) {
 	if (!ClientConfig::GetConfig(binder.context).enable_optimizer) {
 		// if optimizations are disabled we always do a delim join
 		return true;
@@ -236,8 +230,7 @@ static bool PerformDuplicateElimination(Binder &binder, CorrelatedColumns &corre
 	auto type = LogicalType::BIGINT;
 	auto name = "delim_index";
 	CorrelatedColumnInfo info(binding, type, name, 0);
-	correlated_columns.AddColumn(std::move(info));
-	correlated_columns.SetDelimIndexToZero();
+	correlated_columns.insert(correlated_columns.begin(), std::move(info));
 	return false;
 }
 
@@ -379,7 +372,6 @@ unique_ptr<Expression> Binder::PlanSubquery(BoundSubqueryExpression &expr, uniqu
 	} else {
 		result_expression = PlanCorrelatedSubquery(*this, expr, root, std::move(plan));
 	}
-	IncreaseDepth();
 	// finally, we recursively plan the nested subqueries (if there are any)
 	if (sub_binder->has_unplanned_dependent_joins) {
 		RecursiveDependentJoinPlanner plan(*this);
@@ -405,7 +397,7 @@ void Binder::PlanSubqueries(unique_ptr<Expression> &expr_ptr, unique_ptr<Logical
 }
 
 unique_ptr<LogicalOperator> Binder::PlanLateralJoin(unique_ptr<LogicalOperator> left, unique_ptr<LogicalOperator> right,
-                                                    CorrelatedColumns &correlated, JoinType join_type,
+                                                    vector<CorrelatedColumnInfo> &correlated, JoinType join_type,
                                                     unique_ptr<Expression> condition) {
 	// scan the right operator for correlated columns
 	// correlated LATERAL JOIN

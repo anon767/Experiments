@@ -11,8 +11,6 @@ namespace duckdb {
 // Algorithms from
 // "New cardinality estimation algorithms for HyperLogLog sketches"
 // Otmar Ertl, arXiv:1702.01284
-namespace {
-
 struct ApproxDistinctCountState {
 	HyperLogLog hll;
 };
@@ -38,8 +36,8 @@ struct ApproxCountDistinctFunction {
 	}
 };
 
-void ApproxCountDistinctSimpleUpdateFunction(Vector inputs[], AggregateInputData &, idx_t input_count, data_ptr_t state,
-                                             idx_t count) {
+static void ApproxCountDistinctSimpleUpdateFunction(Vector inputs[], AggregateInputData &, idx_t input_count,
+                                                    data_ptr_t state, idx_t count) {
 	D_ASSERT(input_count == 1);
 	auto &input = inputs[0];
 
@@ -53,8 +51,8 @@ void ApproxCountDistinctSimpleUpdateFunction(Vector inputs[], AggregateInputData
 	agg_state->hll.Update(input, hash_vec, count);
 }
 
-void ApproxCountDistinctUpdateFunction(Vector inputs[], AggregateInputData &, idx_t input_count, Vector &state_vector,
-                                       idx_t count) {
+static void ApproxCountDistinctUpdateFunction(Vector inputs[], AggregateInputData &, idx_t input_count,
+                                              Vector &state_vector, idx_t count) {
 	D_ASSERT(input_count == 1);
 	auto &input = inputs[0];
 	UnifiedVectorFormat idata;
@@ -93,8 +91,6 @@ AggregateFunction GetApproxCountDistinctFunction(const LogicalType &input_type) 
 	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
 	return fun;
 }
-
-} // namespace
 
 AggregateFunction ApproxCountDistinctFun::GetFunction() {
 	return GetApproxCountDistinctFunction(LogicalType::ANY);

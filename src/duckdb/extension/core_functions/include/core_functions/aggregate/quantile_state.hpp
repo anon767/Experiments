@@ -201,7 +201,7 @@ struct WindowQuantileState {
 		} else if (s) {
 			// Find the position(s) needed
 			try {
-				QuantileInterpolator<DISCRETE> interp(q, s->size(), false);
+				Interpolator<DISCRETE> interp(q, s->size(), false);
 				s->at(interp.FRN, interp.CRN - interp.FRN + 1, skips);
 				array<INPUT_TYPE, 2> dest;
 				dest[0] = skips[0].second;

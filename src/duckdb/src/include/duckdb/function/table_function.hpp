@@ -111,10 +111,9 @@ struct TableFunctionBindInput {
 struct TableFunctionInitInput {
 	TableFunctionInitInput(optional_ptr<const FunctionData> bind_data_p, vector<column_t> column_ids_p,
 	                       const vector<idx_t> &projection_ids_p, optional_ptr<TableFilterSet> filters_p,
-	                       optional_ptr<SampleOptions> sample_options_p = nullptr,
-	                       optional_ptr<const PhysicalOperator> op_p = nullptr)
+	                       optional_ptr<SampleOptions> sample_options_p = nullptr)
 	    : bind_data(bind_data_p), column_ids(std::move(column_ids_p)), projection_ids(projection_ids_p),
-	      filters(filters_p), sample_options(sample_options_p), op(op_p) {
+	      filters(filters_p), sample_options(sample_options_p) {
 		for (auto &col_id : column_ids) {
 			column_indexes.emplace_back(col_id);
 		}
@@ -122,10 +121,9 @@ struct TableFunctionInitInput {
 
 	TableFunctionInitInput(optional_ptr<const FunctionData> bind_data_p, vector<ColumnIndex> column_indexes_p,
 	                       const vector<idx_t> &projection_ids_p, optional_ptr<TableFilterSet> filters_p,
-	                       optional_ptr<SampleOptions> sample_options_p = nullptr,
-	                       optional_ptr<const PhysicalOperator> op_p = nullptr)
+	                       optional_ptr<SampleOptions> sample_options_p = nullptr)
 	    : bind_data(bind_data_p), column_indexes(std::move(column_indexes_p)), projection_ids(projection_ids_p),
-	      filters(filters_p), sample_options(sample_options_p), op(op_p) {
+	      filters(filters_p), sample_options(sample_options_p) {
 		for (auto &col_id : column_indexes) {
 			column_ids.emplace_back(col_id.GetPrimaryIndex());
 		}
@@ -137,7 +135,6 @@ struct TableFunctionInitInput {
 	const vector<idx_t> projection_ids;
 	optional_ptr<TableFilterSet> filters;
 	optional_ptr<SampleOptions> sample_options;
-	optional_ptr<const PhysicalOperator> op;
 
 	bool CanRemoveFilterColumns() const {
 		if (projection_ids.empty()) {
@@ -291,7 +288,7 @@ typedef BindInfo (*table_function_get_bind_info_t)(const optional_ptr<FunctionDa
 
 typedef unique_ptr<MultiFileReader> (*table_function_get_multi_file_reader_t)(const TableFunction &);
 
-typedef bool (*table_function_supports_pushdown_type_t)(const FunctionData &bind_data, idx_t col_idx);
+typedef bool (*table_function_supports_pushdown_type_t)(const LogicalType &type);
 
 typedef double (*table_function_progress_t)(ClientContext &context, const FunctionData *bind_data,
                                             const GlobalTableFunctionState *global_state);
@@ -432,8 +429,6 @@ public:
 	TableFunctionInitialization global_initialization = TableFunctionInitialization::INITIALIZE_ON_EXECUTE;
 
 	DUCKDB_API bool Equal(const TableFunction &rhs) const;
-	DUCKDB_API bool operator==(const TableFunction &rhs) const;
-	DUCKDB_API bool operator!=(const TableFunction &rhs) const;
 };
 
 } // namespace duckdb

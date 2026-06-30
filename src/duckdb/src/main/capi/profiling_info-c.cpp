@@ -12,17 +12,15 @@ duckdb_profiling_info duckdb_get_profiling_info(duckdb_connection connection) {
 		return nullptr;
 	}
 	Connection *conn = reinterpret_cast<Connection *>(connection);
-	optional_ptr<ProfilingNode> profiling_node;
+	optional_ptr<ProfilingNode> profiling_info;
 	try {
-		profiling_node = conn->GetProfilingTree();
+		profiling_info = conn->GetProfilingTree();
 	} catch (std::exception &ex) {
 		return nullptr;
 	}
 
-	if (!profiling_node) {
-		return nullptr;
-	}
-	return reinterpret_cast<duckdb_profiling_info>(profiling_node.get());
+	ProfilingNode *profiling_info_ptr = profiling_info.get();
+	return reinterpret_cast<duckdb_profiling_info>(profiling_info_ptr);
 }
 
 duckdb_value duckdb_profiling_info_get_value(duckdb_profiling_info info, const char *key) {

@@ -39,7 +39,7 @@ public:
 		UnifiedVectorFormat format;
 		input.ToUnifiedFormat(input_size, format);
 		idx_t size = to - from;
-		append_data.AppendValidity(format, from, to);
+		AppendValidity(append_data, format, from, to);
 		vector<sel_t> child_indices;
 		ArrowListData<BUFTYPE>::AppendOffsets(append_data, format, from, to, child_indices);
 

@@ -133,12 +133,12 @@ void ProgressBar::Update(bool final) {
 		if (final) {
 			FinishProgressBarPrint();
 		} else {
-			PrintProgress(query_progress.percentage.load());
+			PrintProgress(LossyNumericCast<int>(query_progress.percentage.load()));
 		}
 	}
 }
 
-void ProgressBar::PrintProgress(double current_percentage_p) {
+void ProgressBar::PrintProgress(int current_percentage_p) {
 	D_ASSERT(display);
 	display->Update(current_percentage_p);
 }

@@ -12,12 +12,11 @@
 
 namespace duckdb {
 
-namespace {
-
 struct ConcatFunctionData : public FunctionData {
 	ConcatFunctionData(const LogicalType &return_type_p, bool is_operator_p)
 	    : return_type(return_type_p), is_operator(is_operator_p) {
 	}
+	~ConcatFunctionData() override;
 
 	LogicalType return_type;
 
@@ -28,6 +27,9 @@ public:
 	unique_ptr<FunctionData> Copy() const override;
 };
 
+ConcatFunctionData::~ConcatFunctionData() {
+}
+
 bool ConcatFunctionData::Equals(const FunctionData &other_p) const {
 	auto &other = other_p.Cast<ConcatFunctionData>();
 	return return_type == other.return_type && is_operator == other.is_operator;
@@ -37,7 +39,7 @@ unique_ptr<FunctionData> ConcatFunctionData::Copy() const {
 	return make_uniq<ConcatFunctionData>(return_type, is_operator);
 }
 
-void StringConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void StringConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	result.SetVectorType(VectorType::CONSTANT_VECTOR);
 	// iterate over the vectors to count how large the final string will be
 	idx_t constant_lengths = 0;
@@ -123,7 +125,7 @@ void StringConcatFunction(DataChunk &args, ExpressionState &state, Vector &resul
 	}
 }
 
-void ConcatOperator(DataChunk &args, ExpressionState &state, Vector &result) {
+static void ConcatOperator(DataChunk &args, ExpressionState &state, Vector &result) {
 	BinaryExecutor::Execute<string_t, string_t, string_t>(
 	    args.data[0], args.data[1], result, args.size(), [&](string_t a, string_t b) {
 		    auto a_data = a.GetData();
@@ -153,7 +155,7 @@ struct ListConcatInputData {
 	const list_entry_t *input_entries = nullptr;
 };
 
-void ListConcatFunction(DataChunk &args, ExpressionState &state, Vector &result, bool is_operator) {
+static void ListConcatFunction(DataChunk &args, ExpressionState &state, Vector &result, bool is_operator) {
 	auto count = args.size();
 
 	auto result_entries = FlatVector::GetData<list_entry_t>(result);
@@ -205,7 +207,7 @@ void ListConcatFunction(DataChunk &args, ExpressionState &state, Vector &result,
 	}
 }
 
-void ConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void ConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &func_expr = state.expr.Cast<BoundFunctionExpression>();
 	auto &info = func_expr.bind_info->Cast<ConcatFunctionData>();
 	if (info.return_type.id() == LogicalTypeId::LIST) {
@@ -216,7 +218,7 @@ void ConcatFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	return StringConcatFunction(args, state, result);
 }
 
-void SetArgumentType(ScalarFunction &bound_function, const LogicalType &type, bool is_operator) {
+static void SetArgumentType(ScalarFunction &bound_function, const LogicalType &type, bool is_operator) {
 	if (is_operator) {
 		bound_function.arguments[0] = type;
 		bound_function.arguments[1] = type;
@@ -231,8 +233,8 @@ void SetArgumentType(ScalarFunction &bound_function, const LogicalType &type, bo
 	bound_function.return_type = type;
 }
 
-unique_ptr<FunctionData> BindListConcat(ClientContext &context, ScalarFunction &bound_function,
-                                        vector<unique_ptr<Expression>> &arguments, bool is_operator) {
+static unique_ptr<FunctionData> BindListConcat(ClientContext &context, ScalarFunction &bound_function,
+                                               vector<unique_ptr<Expression>> &arguments, bool is_operator) {
 	LogicalType child_type = LogicalType::SQLNULL;
 	bool all_null = true;
 	for (auto &arg : arguments) {
@@ -285,8 +287,9 @@ unique_ptr<FunctionData> BindListConcat(ClientContext &context, ScalarFunction &
 	return make_uniq<ConcatFunctionData>(bound_function.return_type, is_operator);
 }
 
-unique_ptr<FunctionData> BindConcatFunctionInternal(ClientContext &context, ScalarFunction &bound_function,
-                                                    vector<unique_ptr<Expression>> &arguments, bool is_operator) {
+static unique_ptr<FunctionData> BindConcatFunctionInternal(ClientContext &context, ScalarFunction &bound_function,
+                                                           vector<unique_ptr<Expression>> &arguments,
+                                                           bool is_operator) {
 	bool list_concat = false;
 	// blob concat is only supported for the concat operator - regular concat converts to varchar
 	bool all_blob = is_operator ? true : false;
@@ -311,17 +314,17 @@ unique_ptr<FunctionData> BindConcatFunctionInternal(ClientContext &context, Scal
 	return make_uniq<ConcatFunctionData>(bound_function.return_type, is_operator);
 }
 
-unique_ptr<FunctionData> BindConcatFunction(ClientContext &context, ScalarFunction &bound_function,
-                                            vector<unique_ptr<Expression>> &arguments) {
+static unique_ptr<FunctionData> BindConcatFunction(ClientContext &context, ScalarFunction &bound_function,
+                                                   vector<unique_ptr<Expression>> &arguments) {
 	return BindConcatFunctionInternal(context, bound_function, arguments, false);
 }
 
-unique_ptr<FunctionData> BindConcatOperator(ClientContext &context, ScalarFunction &bound_function,
-                                            vector<unique_ptr<Expression>> &arguments) {
+static unique_ptr<FunctionData> BindConcatOperator(ClientContext &context, ScalarFunction &bound_function,
+                                                   vector<unique_ptr<Expression>> &arguments) {
 	return BindConcatFunctionInternal(context, bound_function, arguments, true);
 }
 
-unique_ptr<BaseStatistics> ListConcatStats(ClientContext &context, FunctionStatisticsInput &input) {
+static unique_ptr<BaseStatistics> ListConcatStats(ClientContext &context, FunctionStatisticsInput &input) {
 	auto &child_stats = input.child_stats;
 	auto stats = child_stats[0].ToUnique();
 	for (idx_t i = 1; i < child_stats.size(); i++) {
@@ -329,8 +332,6 @@ unique_ptr<BaseStatistics> ListConcatStats(ClientContext &context, FunctionStati
 	}
 	return stats;
 }
-
-} // namespace
 
 ScalarFunction ListConcatFun::GetFunction() {
 	// The arguments and return types are set in the binder function.

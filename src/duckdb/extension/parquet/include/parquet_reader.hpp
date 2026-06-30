@@ -77,9 +77,6 @@ struct ParquetReaderScanState {
 	unique_ptr<AdaptiveFilter> adaptive_filter;
 	//! Table filter list
 	vector<ParquetScanFilter> scan_filters;
-
-	//! (optional) pointer to the PhysicalOperator for logging
-	optional_ptr<const PhysicalOperator> op;
 };
 
 struct ParquetColumnDefinition {
@@ -105,7 +102,6 @@ struct ParquetOptions {
 	explicit ParquetOptions(ClientContext &context);
 
 	bool binary_as_string = false;
-	bool variant_legacy_encoding = false;
 	bool file_row_number = false;
 	shared_ptr<ParquetEncryptionConfig> encryption_config;
 	bool debug_use_openssl = true;
@@ -134,11 +130,8 @@ struct ParquetUnionData : public BaseUnionData {
 	}
 	~ParquetUnionData() override;
 
-	unique_ptr<BaseStatistics> GetStatistics(ClientContext &context, const string &name) override;
-
 	ParquetOptions options;
 	shared_ptr<ParquetFileMetadataCache> metadata;
-	unique_ptr<ParquetColumnSchema> root_schema;
 };
 
 class ParquetReader : public BaseFileReader {
@@ -192,7 +185,6 @@ public:
 
 	static unique_ptr<BaseStatistics> ReadStatistics(ClientContext &context, ParquetOptions parquet_options,
 	                                                 shared_ptr<ParquetFileMetadataCache> metadata, const string &name);
-	static unique_ptr<BaseStatistics> ReadStatistics(const ParquetUnionData &union_data, const string &name);
 
 	LogicalType DeriveLogicalType(const SchemaElement &s_ele, ParquetColumnSchema &schema) const;
 
@@ -211,9 +203,9 @@ private:
 	void InitializeSchema(ClientContext &context);
 	bool ScanInternal(ClientContext &context, ParquetReaderScanState &state, DataChunk &output);
 	//! Parse the schema of the file
-	unique_ptr<ParquetColumnSchema> ParseSchema(ClientContext &context);
+	unique_ptr<ParquetColumnSchema> ParseSchema();
 	ParquetColumnSchema ParseSchemaRecursive(idx_t depth, idx_t max_define, idx_t max_repeat, idx_t &next_schema_idx,
-	                                         idx_t &next_file_idx, ClientContext &context);
+	                                         idx_t &next_file_idx);
 
 	unique_ptr<ColumnReader> CreateReader(ClientContext &context);
 

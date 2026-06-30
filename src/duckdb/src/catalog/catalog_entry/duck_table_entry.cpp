@@ -23,7 +23,6 @@
 #include "duckdb/parser/expression/function_expression.hpp"
 #include "duckdb/storage/storage_manager.hpp"
 #include "duckdb/storage/table_storage_info.hpp"
-#include "duckdb/common/type_visitor.hpp"
 
 namespace duckdb {
 
@@ -55,9 +54,6 @@ DuckTableEntry::DuckTableEntry(Catalog &catalog, SchemaCatalogEntry &schema, Bou
 	// create the physical storage
 	vector<ColumnDefinition> column_defs;
 	for (auto &col_def : columns.Physical()) {
-		if (TypeVisitor::Contains(col_def.Type(), LogicalTypeId::VARIANT)) {
-			throw NotImplementedException("A table cannot be created from a VARIANT column yet");
-		}
 		column_defs.push_back(col_def.Copy());
 	}
 	storage = make_shared_ptr<DataTable>(catalog.GetAttached(), StorageManager::Get(catalog).GetTableIOManager(&info),
@@ -263,12 +259,15 @@ void DuckTableEntry::UndoAlter(ClientContext &context, AlterInfo &info) {
 	}
 }
 
-static void RenameExpression(ParsedExpression &root_expr, RenameColumnInfo &info) {
-	ParsedExpressionIterator::VisitExpressionMutable<ColumnRefExpression>(root_expr, [&](ColumnRefExpression &colref) {
+static void RenameExpression(ParsedExpression &expr, RenameColumnInfo &info) {
+	if (expr.GetExpressionType() == ExpressionType::COLUMN_REF) {
+		auto &colref = expr.Cast<ColumnRefExpression>();
 		if (colref.column_names.back() == info.old_name) {
 			colref.column_names.back() = info.new_name;
 		}
-	});
+	}
+	ParsedExpressionIterator::EnumerateChildren(
+	    expr, [&](const ParsedExpression &child) { RenameExpression((ParsedExpression &)child, info); });
 }
 
 unique_ptr<CatalogEntry> DuckTableEntry::RenameColumn(ClientContext &context, RenameColumnInfo &info) {
@@ -859,12 +858,12 @@ unique_ptr<CatalogEntry> DuckTableEntry::RenameField(ClientContext &context, Ren
 	if (!ColumnExists(info.column_path[0])) {
 		throw CatalogException("Cannot rename field from column \"%s\" - it does not exist", info.column_path[0]);
 	}
-
 	// follow the path
 	auto &col = GetColumn(info.column_path[0]);
 	auto res = RenameFieldFromStruct(col.Type(), info.column_path, info.new_name, 1);
 	if (res.error.HasError()) {
 		res.error.Throw();
+		return nullptr;
 	}
 
 	// construct the struct remapping expression
@@ -875,6 +874,7 @@ unique_ptr<CatalogEntry> DuckTableEntry::RenameField(ClientContext &context, Ren
 	children.push_back(make_uniq<ConstantExpression>(Value()));
 
 	auto function = make_uniq<FunctionExpression>("remap_struct", std::move(children));
+
 	ChangeColumnTypeInfo change_column_type(info.GetAlterEntryData(), info.column_path[0], std::move(res.new_type),
 	                                        std::move(function));
 	return ChangeColumnType(context, change_column_type);

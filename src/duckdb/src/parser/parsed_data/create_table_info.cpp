@@ -30,7 +30,20 @@ unique_ptr<CreateInfo> CreateTableInfo::Copy() const {
 }
 
 string CreateTableInfo::ToString() const {
-	string ret = GetCreatePrefix("TABLE");
+	string ret = "";
+
+	ret += "CREATE";
+	if (on_conflict == OnCreateConflict::REPLACE_ON_CONFLICT) {
+		ret += " OR REPLACE";
+	}
+	if (temporary) {
+		ret += " TEMP";
+	}
+	ret += " TABLE ";
+
+	if (on_conflict == OnCreateConflict::IGNORE_ON_CONFLICT) {
+		ret += " IF NOT EXISTS ";
+	}
 	ret += QualifierToString(temporary ? "" : catalog, schema, table);
 
 	if (query != nullptr) {

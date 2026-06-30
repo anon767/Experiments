@@ -42,8 +42,6 @@
 
 #include "src/parser/transform/statement/transform_load.cpp"
 
-#include "src/parser/transform/statement/transform_merge_into.cpp"
-
 #include "src/parser/transform/statement/transform_pragma.cpp"
 
 #include "src/parser/transform/statement/transform_rename.cpp"

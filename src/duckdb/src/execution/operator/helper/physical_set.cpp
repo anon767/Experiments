@@ -6,27 +6,20 @@
 
 namespace duckdb {
 
-void PhysicalSet::SetGenericVariable(ClientContext &context, const string &name, SetScope scope, Value target_value) {
-	if (scope == SetScope::GLOBAL) {
-		auto &config = DBConfig::GetConfig(context);
-		config.SetOption(name, std::move(target_value));
-	} else {
-		auto &client_config = ClientConfig::GetConfig(context);
-		client_config.set_variables[name] = std::move(target_value);
-	}
-}
-
 void PhysicalSet::SetExtensionVariable(ClientContext &context, ExtensionOption &extension_option, const string &name,
                                        SetScope scope, const Value &value) {
+	auto &config = DBConfig::GetConfig(context);
 	auto &target_type = extension_option.type;
 	Value target_value = value.CastAs(context, target_type);
 	if (extension_option.set_function) {
 		extension_option.set_function(context, scope, target_value);
 	}
-	if (scope == SetScope::AUTOMATIC) {
-		scope = extension_option.default_scope;
+	if (scope == SetScope::GLOBAL) {
+		config.SetOption(name, std::move(target_value));
+	} else {
+		auto &client_config = ClientConfig::GetConfig(context);
+		client_config.set_variables[name] = std::move(target_value);
 	}
-	SetGenericVariable(context, name, scope, std::move(target_value));
 }
 
 SourceResultType PhysicalSet::GetData(ExecutionContext &context, DataChunk &chunk, OperatorSourceInput &input) const {
@@ -38,11 +31,9 @@ SourceResultType PhysicalSet::GetData(ExecutionContext &context, DataChunk &chun
 		// check if this is an extra extension variable
 		auto entry = config.extension_parameters.find(name);
 		if (entry == config.extension_parameters.end()) {
-			auto extension_name = Catalog::AutoloadExtensionByConfigName(context.client, name);
+			Catalog::AutoloadExtensionByConfigName(context.client, name);
 			entry = config.extension_parameters.find(name);
-			if (entry == config.extension_parameters.end()) {
-				throw InvalidInputException("Extension parameter %s was not found after autoloading", name);
-			}
+			D_ASSERT(entry != config.extension_parameters.end());
 		}
 		SetExtensionVariable(context.client, entry->second, name, scope, value);
 		return SourceResultType::FINISHED;
@@ -51,28 +42,20 @@ SourceResultType PhysicalSet::GetData(ExecutionContext &context, DataChunk &chun
 	if (variable_scope == SetScope::AUTOMATIC) {
 		if (option->set_local) {
 			variable_scope = SetScope::SESSION;
-		} else if (option->set_global) {
-			variable_scope = SetScope::GLOBAL;
 		} else {
-			variable_scope = option->default_scope;
+			D_ASSERT(option->set_global);
+			variable_scope = SetScope::GLOBAL;
 		}
 	}
 
 	Value input_val = value.CastAs(context.client, DBConfig::ParseLogicalType(option->parameter_type));
-	if (option->default_value) {
-		if (option->set_callback) {
-			SettingCallbackInfo info(context.client, variable_scope);
-			option->set_callback(info, input_val);
-		}
-		SetGenericVariable(context.client, option->name, variable_scope, std::move(input_val));
-		return SourceResultType::FINISHED;
-	}
 	switch (variable_scope) {
 	case SetScope::GLOBAL: {
 		if (!option->set_global) {
 			throw CatalogException("option \"%s\" cannot be set globally", name);
 		}
 		auto &db = DatabaseInstance::GetDatabase(context.client);
+		auto &config = DBConfig::GetConfig(context.client);
 		config.SetOption(&db, *option, input_val);
 		break;
 	}

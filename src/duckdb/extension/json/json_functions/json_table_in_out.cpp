@@ -155,7 +155,7 @@ template <class T>
 struct JSONTableInOutResultVector {
 	explicit JSONTableInOutResultVector(DataChunk &output, const optional_idx &output_column_index)
 	    : enabled(output_column_index.IsValid()), vector(output.data[enabled ? output_column_index.GetIndex() : 0]),
-	      data(enabled ? FlatVector::GetData<T>(vector) : nullptr), validity(FlatVector::Validity(vector)) {
+	      data(FlatVector::GetData<T>(vector)), validity(FlatVector::Validity(vector)) {
 	}
 	const bool enabled;
 	Vector &vector;
@@ -244,11 +244,7 @@ static void InitializeLocalState(JSONTableInOutLocalState &lstate, DataChunk &in
 	// Parse path, default to root if not given
 	Value path_value("$");
 	if (input.data.size() > 1) {
-		auto &path_vector = input.data[1];
-		if (ConstantVector::IsNull(path_vector)) {
-			return;
-		}
-		path_value = ConstantVector::GetData<string_t>(path_vector)[0];
+		path_value = ConstantVector::GetData<string_t>(input.data[1])[0];
 	}
 
 	if (JSONReadFunctionData::CheckPath(path_value, lstate.path, lstate.len) == JSONCommon::JSONPathType::WILDCARD) {

@@ -53,7 +53,6 @@ PhysicalOperator &ART::CreatePlan(PlanIndexInput &input) {
 	if (op.unbound_expressions.size() > 1) {
 		sort = false;
 	} else if (op.unbound_expressions[0]->return_type.InternalType() == PhysicalType::VARCHAR) {
-		// TODO: also sort VARCHAR
 		sort = false;
 	}
 
@@ -78,7 +77,7 @@ PhysicalOperator &ART::CreatePlan(PlanIndexInput &input) {
 	projections.emplace_back(new_column_types.size() - 1);
 
 	auto &order = planner.Make<PhysicalOrder>(new_column_types, std::move(orders), std::move(projections),
-	                                          op.estimated_cardinality, true);
+	                                          op.estimated_cardinality);
 	order.children.push_back(prev_op);
 	create_idx.children.push_back(order);
 	return create_idx;

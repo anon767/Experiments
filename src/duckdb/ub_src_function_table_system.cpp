@@ -1,7 +1,3 @@
-#include "src/function/table/system/duckdb_connection_count.cpp"
-
-#include "src/function/table/system/duckdb_approx_database_count.cpp"
-
 #include "src/function/table/system/duckdb_columns.cpp"
 
 #include "src/function/table/system/duckdb_constraints.cpp"
@@ -51,8 +47,6 @@
 #include "src/function/table/system/duckdb_variables.cpp"
 
 #include "src/function/table/system/duckdb_views.cpp"
-
-#include "src/function/table/system/logging_utils.cpp"
 
 #include "src/function/table/system/pragma_collations.cpp"
 

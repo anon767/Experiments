@@ -9,8 +9,6 @@
 
 namespace duckdb {
 
-namespace {
-
 template <class T>
 struct HistogramBinState {
 	using TYPE = T;
@@ -149,8 +147,8 @@ struct HistogramExact {
 };
 
 template <class OP, class T, class HIST>
-void HistogramBinUpdateFunction(Vector inputs[], AggregateInputData &aggr_input, idx_t input_count,
-                                Vector &state_vector, idx_t count) {
+static void HistogramBinUpdateFunction(Vector inputs[], AggregateInputData &aggr_input, idx_t input_count,
+                                       Vector &state_vector, idx_t count) {
 	auto &input = inputs[0];
 	UnifiedVectorFormat sdata;
 	state_vector.ToUnifiedFormat(count, sdata);
@@ -177,7 +175,7 @@ void HistogramBinUpdateFunction(Vector inputs[], AggregateInputData &aggr_input,
 	}
 }
 
-bool SupportsOtherBucket(const LogicalType &type) {
+static bool SupportsOtherBucket(const LogicalType &type) {
 	if (type.HasAlias()) {
 		return false;
 	}
@@ -212,7 +210,7 @@ bool SupportsOtherBucket(const LogicalType &type) {
 		return false;
 	}
 }
-Value OtherBucketValue(const LogicalType &type) {
+static Value OtherBucketValue(const LogicalType &type) {
 	switch (type.id()) {
 	case LogicalTypeId::TINYINT:
 	case LogicalTypeId::SMALLINT:
@@ -257,7 +255,7 @@ Value OtherBucketValue(const LogicalType &type) {
 	}
 }
 
-void IsHistogramOtherBinFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void IsHistogramOtherBinFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &input_type = args.data[0].GetType();
 	if (!SupportsOtherBucket(input_type)) {
 		result.Reference(Value::BOOLEAN(false));
@@ -269,8 +267,8 @@ void IsHistogramOtherBinFunction(DataChunk &args, ExpressionState &state, Vector
 }
 
 template <class OP, class T>
-void HistogramBinFinalizeFunction(Vector &state_vector, AggregateInputData &, Vector &result, idx_t count,
-                                  idx_t offset) {
+static void HistogramBinFinalizeFunction(Vector &state_vector, AggregateInputData &, Vector &result, idx_t count,
+                                         idx_t offset) {
 	UnifiedVectorFormat sdata;
 	state_vector.ToUnifiedFormat(count, sdata);
 	auto states = UnifiedVectorFormat::GetData<HistogramBinState<T> *>(sdata);
@@ -329,7 +327,7 @@ void HistogramBinFinalizeFunction(Vector &state_vector, AggregateInputData &, Ve
 }
 
 template <class OP, class T, class HIST>
-AggregateFunction GetHistogramBinFunction(const LogicalType &type) {
+static AggregateFunction GetHistogramBinFunction(const LogicalType &type) {
 	using STATE_TYPE = HistogramBinState<T>;
 
 	const char *function_name = HIST::EXACT ? "histogram_exact" : "histogram";
@@ -391,8 +389,6 @@ unique_ptr<FunctionData> HistogramBinBindFunction(ClientContext &context, Aggreg
 	function = GetHistogramBinFunction<HIST>(arguments[0]->return_type);
 	return nullptr;
 }
-
-} // namespace
 
 AggregateFunction HistogramFun::BinnedHistogramFunction() {
 	return AggregateFunction("histogram", {LogicalType::ANY, LogicalType::LIST(LogicalType::ANY)}, LogicalTypeId::MAP,
