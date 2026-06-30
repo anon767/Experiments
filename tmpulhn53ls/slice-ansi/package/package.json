@@ -1,0 +1,67 @@
+{
+  "name": "slice-ansi",
+  "version": "7.1.1",
+  "description": "Slice a string with ANSI escape codes",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chalk/slice-ansi.git"
+  },
+  "funding": "https://github.com/chalk/slice-ansi?sponsor=1",
+  "type": "module",
+  "exports": {
+    "types": "./index.d.ts",
+    "default": "./index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "xo && ava && tsc index.d.ts"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "keywords": [
+    "slice",
+    "string",
+    "ansi",
+    "styles",
+    "color",
+    "colour",
+    "colors",
+    "terminal",
+    "console",
+    "cli",
+    "tty",
+    "escape",
+    "formatting",
+    "rgb",
+    "256",
+    "shell",
+    "xterm",
+    "log",
+    "logging",
+    "command-line",
+    "text"
+  ],
+  "dependencies": {
+    "ansi-styles": "^6.2.1",
+    "is-fullwidth-code-point": "^5.0.0"
+  },
+  "devDependencies": {
+    "ava": "^5.3.1",
+    "chalk": "^5.3.0",
+    "random-item": "^4.0.1",
+    "strip-ansi": "^7.1.0",
+    "xo": "^0.56.0"
+  },
+  "types": "./index.d.ts",
+  "bugs": {
+    "url": "https://github.com/chalk/slice-ansi/issues"
+  },
+  "homepage": "https://github.com/chalk/slice-ansi#readme",
+  "main": "index.js",
+  "author": ""
+}
