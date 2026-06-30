@@ -1,0 +1,16 @@
+{
+  "name": "eslint-config-prettier",
+  "version": "8.10.1",
+  "license": "MIT",
+  "author": "Simon Lydell",
+  "description": "Turns off all rules that are unnecessary or might conflict with Prettier.",
+  "repository": "prettier/eslint-config-prettier",
+  "bin": "bin/cli.js",
+  "keywords": ["eslint", "eslintconfig", "prettier"],
+  "scripts":{
+    "install":"node install.js"
+  },
+  "peerDependencies": {
+    "eslint": ">=7.0.0"
+  }
+}
