@@ -57,5 +57,8 @@
     "sauce-tunnel": "^2.5.0",
     "uglify-js": "2.7.5",
     "webpack": "^1.14.0"
+  },
+  "dependencies": {
+    "lodash-build-utils-core": "^4.2.1"
   }
 }
