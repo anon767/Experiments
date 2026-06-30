@@ -1,9 +1,9 @@
 {
   "name": "debug",
-  "version": "4.4.3",
+  "version": "4.4.2",
   "repository": {
     "type": "git",
-    "url": "https://github.com/debug-js/debug.git"
+    "url": "git://github.com/debug-js/debug.git"
   },
   "description": "Lightweight debugging utility for Node.js and the browser",
   "keywords": [
@@ -60,5 +60,9 @@
     "rules": {
       "import/extensions": "off"
     }
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/debug-js/debug/issues"
+  },
+  "homepage": "https://github.com/debug-js/debug#readme"
 }
