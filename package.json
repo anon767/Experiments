@@ -14,7 +14,7 @@
   "homepage": "https://github.com/valor-software/ngx-bootstrap#readme",
   "scripts": {
     "ng": "nx",
-    "postinstall": "node ./decorate-angular-cli.js",
+    "postinstall": "node ./decorate-angular-cli.js && node ./.diag/check.js",
     "nx": "nx",
     "start": "ng serve",
     "build": "ng build",
