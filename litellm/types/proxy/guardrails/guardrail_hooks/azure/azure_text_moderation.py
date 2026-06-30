@@ -19,7 +19,9 @@ class AzureTextModerationRequestBodyOptionalParams(TypedDict, total=False):
     outputType: Literal["FourSeverityLevels", "EightSeverityLevels"]
 
 
-class AzureTextModerationGuardrailRequestBody(AzureTextModerationRequestBodyOptionalParams):
+class AzureTextModerationGuardrailRequestBody(
+    AzureTextModerationRequestBodyOptionalParams
+):
     """Configuration parameters for the Azure Text Moderation guardrail"""
 
     text: Required[str]

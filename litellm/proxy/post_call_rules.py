@@ -1,5 +1,5 @@
 def post_response_rule(input):  # receives the model response
-    print(f"post_response_rule:input={input}")  # noqa: T201
+    print(f"post_response_rule:input={input}")  # noqa
     if len(input) < 200:
         return {
             "decision": False,

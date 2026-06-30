@@ -30,7 +30,9 @@ class PolicyValidationError(BaseModel):
     """
 
     policy_name: str = Field(description="Name of the policy with the issue.")
-    error_type: PolicyValidationErrorType = Field(description="Type of validation error.")
+    error_type: PolicyValidationErrorType = Field(
+        description="Type of validation error."
+    )
     message: str = Field(description="Human-readable error message.")
     field: Optional[str] = Field(
         default=None,

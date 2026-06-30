@@ -21,13 +21,17 @@ class CustomDB:
         """
         pass
 
-    def update_data(self, key: str, value: Any, table_name: Literal["user", "key", "config"]):
+    def update_data(
+        self, key: str, value: Any, table_name: Literal["user", "key", "config"]
+    ):
         """
         For cost tracking logic
         """
         pass
 
-    def delete_data(self, keys: List[str], table_name: Literal["user", "key", "config"]):
+    def delete_data(
+        self, keys: List[str], table_name: Literal["user", "key", "config"]
+    ):
         """
         For /key/delete endpoint s
         """

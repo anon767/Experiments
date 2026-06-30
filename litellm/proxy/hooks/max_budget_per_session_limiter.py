@@ -17,13 +17,12 @@ Follows the same pattern as max_iterations_limiter.py.
 import os
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+from fastapi import HTTPException
+
 from litellm import DualCache
 from litellm._logging import verbose_proxy_logger
 from litellm.integrations.custom_logger import CustomLogger
-from litellm.exceptions import RateLimitType
 from litellm.proxy._types import UserAPIKeyAuth
-from litellm.proxy.common_utils.proxy_rate_limit_error import ProxyRateLimitError
-from litellm.proxy.hooks.rate_limiter_utils import resolve_llm_provider_for_rate_limit
 
 if TYPE_CHECKING:
     from litellm.proxy.utils import InternalUsageCache as _InternalUsageCache
@@ -75,8 +74,10 @@ class _PROXY_MaxBudgetPerSessionHandler(CustomLogger):
         )
 
         if self.internal_usage_cache.dual_cache.redis_cache is not None:
-            self.increment_script = self.internal_usage_cache.dual_cache.redis_cache.async_register_script(
-                MAX_BUDGET_SESSION_INCREMENT_SCRIPT
+            self.increment_script = (
+                self.internal_usage_cache.dual_cache.redis_cache.async_register_script(
+                    MAX_BUDGET_SESSION_INCREMENT_SCRIPT
+                )
             )
         else:
             self.increment_script = None
@@ -111,16 +112,13 @@ class _PROXY_MaxBudgetPerSessionHandler(CustomLogger):
         )
 
         if current_spend >= max_budget:
-            resolved_model, llm_provider = resolve_llm_provider_for_rate_limit(data.get("model") if data else None)
-            raise ProxyRateLimitError(
+            raise HTTPException(
+                status_code=429,
                 detail=(
                     f"Session budget exceeded for session {session_id}. "
                     f"Current spend: ${current_spend:.4f}, "
                     f"max_budget_per_session: ${max_budget:.2f}."
                 ),
-                rate_limit_type=RateLimitType.BUDGET,
-                model=resolved_model,
-                llm_provider=llm_provider,
             )
 
         return None
@@ -185,7 +183,9 @@ class _PROXY_MaxBudgetPerSessionHandler(CustomLogger):
 
         return None
 
-    def _get_max_budget_per_session(self, user_api_key_dict: UserAPIKeyAuth) -> Optional[float]:
+    def _get_max_budget_per_session(
+        self, user_api_key_dict: UserAPIKeyAuth
+    ) -> Optional[float]:
         """Extract max_budget_per_session from agent litellm_params."""
         agent_id = user_api_key_dict.agent_id
         if agent_id is None:
@@ -210,13 +210,16 @@ class _PROXY_MaxBudgetPerSessionHandler(CustomLogger):
         """Read current accumulated spend for a session."""
         if self.internal_usage_cache.dual_cache.redis_cache is not None:
             try:
-                result = await self.internal_usage_cache.dual_cache.redis_cache.async_get_cache(key=cache_key)
+                result = await self.internal_usage_cache.dual_cache.redis_cache.async_get_cache(
+                    key=cache_key
+                )
                 if result is not None:
                     return float(result)
                 return 0.0
             except Exception as e:
                 verbose_proxy_logger.warning(
-                    "MaxBudgetPerSessionHandler: Redis GET failed, falling back to in-memory: %s",
+                    "MaxBudgetPerSessionHandler: Redis GET failed, "
+                    "falling back to in-memory: %s",
                     str(e),
                 )
 
@@ -240,7 +243,8 @@ class _PROXY_MaxBudgetPerSessionHandler(CustomLogger):
                 return float(result)
             except Exception as e:
                 verbose_proxy_logger.warning(
-                    "MaxBudgetPerSessionHandler: Redis INCRBYFLOAT failed, falling back to in-memory: %s",
+                    "MaxBudgetPerSessionHandler: Redis INCRBYFLOAT failed, "
+                    "falling back to in-memory: %s",
                     str(e),
                 )
 

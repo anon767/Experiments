@@ -18,7 +18,9 @@ class VLLMError(Exception):
         self.message = message
         self.request = httpx.Request(method="POST", url="http://0.0.0.0:8000")
         self.response = httpx.Response(status_code=status_code, request=self.request)
-        super().__init__(self.message)  # Call the base class constructor with the parameters it needs
+        super().__init__(
+            self.message
+        )  # Call the base class constructor with the parameters it needs
 
 
 # check if vllm is installed
@@ -74,7 +76,9 @@ def completion(
     if llm:
         outputs = llm.generate(prompt, sampling_params)
     else:
-        raise VLLMError(status_code=0, message="Need to pass in a model name to initialize vllm")
+        raise VLLMError(
+            status_code=0, message="Need to pass in a model name to initialize vllm"
+        )
 
     ## COMPLETION CALL
     if "stream" in optional_params and optional_params["stream"] is True:
@@ -106,7 +110,9 @@ def completion(
         return model_response
 
 
-def batch_completions(model: str, messages: list, optional_params=None, custom_prompt_dict={}):
+def batch_completions(
+    model: str, messages: list, optional_params=None, custom_prompt_dict={}
+):
     """
     Example usage:
     import litellm
@@ -158,7 +164,9 @@ def batch_completions(model: str, messages: list, optional_params=None, custom_p
     if llm:
         outputs = llm.generate(prompts, sampling_params)
     else:
-        raise VLLMError(status_code=0, message="Need to pass in a model name to initialize vllm")
+        raise VLLMError(
+            status_code=0, message="Need to pass in a model name to initialize vllm"
+        )
 
     final_outputs = []
     for output in outputs:

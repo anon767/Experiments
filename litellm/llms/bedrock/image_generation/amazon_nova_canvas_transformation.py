@@ -60,7 +60,9 @@ class AmazonNovaCanvasConfig:
         return False
 
     @classmethod
-    def transform_request_body(cls, text: str, optional_params: dict) -> AmazonNovaCanvasRequestBase:
+    def transform_request_body(
+        cls, text: str, optional_params: dict
+    ) -> AmazonNovaCanvasRequestBase:
         """
         Transform the request body for Amazon Nova Canvas model
         """
@@ -73,7 +75,9 @@ class AmazonNovaCanvasConfig:
 
         image_generation_config = {**image_generation_config, **optional_params}
         if task_type == "TEXT_IMAGE":
-            text_to_image_params: Dict[str, Any] = image_generation_config.pop("textToImageParams", {})
+            text_to_image_params: Dict[str, Any] = image_generation_config.pop(
+                "textToImageParams", {}
+            )
             text_to_image_params = {"text": text, **text_to_image_params}
             try:
                 text_to_image_params_typed = AmazonNovaCanvasTextToImageParams(
@@ -85,7 +89,9 @@ class AmazonNovaCanvasConfig:
                 )
 
             try:
-                image_generation_config_typed = AmazonNovaCanvasImageGenerationConfig(**image_generation_config)
+                image_generation_config_typed = AmazonNovaCanvasImageGenerationConfig(
+                    **image_generation_config
+                )
             except Exception as e:
                 raise ValueError(
                     f"Error transforming image generation config: {e}. Got params: {image_generation_config}, Expected params: {AmazonNovaCanvasImageGenerationConfig.__annotations__}"
@@ -97,9 +103,9 @@ class AmazonNovaCanvasConfig:
                 imageGenerationConfig=image_generation_config_typed,
             )
         if task_type == "COLOR_GUIDED_GENERATION":
-            color_guided_generation_params: Dict[str, Any] = image_generation_config.pop(
-                "colorGuidedGenerationParams", {}
-            )
+            color_guided_generation_params: Dict[
+                str, Any
+            ] = image_generation_config.pop("colorGuidedGenerationParams", {})
             color_guided_generation_params = {
                 "text": text,
                 **color_guided_generation_params,
@@ -114,7 +120,9 @@ class AmazonNovaCanvasConfig:
                 )
 
             try:
-                image_generation_config_typed = AmazonNovaCanvasImageGenerationConfig(**image_generation_config)
+                image_generation_config_typed = AmazonNovaCanvasImageGenerationConfig(
+                    **image_generation_config
+                )
             except Exception as e:
                 raise ValueError(
                     f"Error transforming image generation config: {e}. Got params: {image_generation_config}, Expected params: {AmazonNovaCanvasImageGenerationConfig.__annotations__}"
@@ -126,7 +134,9 @@ class AmazonNovaCanvasConfig:
                 imageGenerationConfig=image_generation_config_typed,
             )
         if task_type == "INPAINTING":
-            inpainting_params: Dict[str, Any] = image_generation_config.pop("inpaintingParams", {})
+            inpainting_params: Dict[str, Any] = image_generation_config.pop(
+                "inpaintingParams", {}
+            )
             inpainting_params = {"text": text, **inpainting_params}
             try:
                 inpainting_params_typed = AmazonNovaCanvasInpaintingParams(
@@ -138,7 +148,9 @@ class AmazonNovaCanvasConfig:
                 )
 
             try:
-                image_generation_config_typed = AmazonNovaCanvasImageGenerationConfig(**image_generation_config)
+                image_generation_config_typed = AmazonNovaCanvasImageGenerationConfig(
+                    **image_generation_config
+                )
             except Exception as e:
                 raise ValueError(
                     f"Error transforming image generation config: {e}. Got params: {image_generation_config}, Expected params: {AmazonNovaCanvasImageGenerationConfig.__annotations__}"
@@ -159,9 +171,8 @@ class AmazonNovaCanvasConfig:
         _size = non_default_params.get("size")
         if _size is not None:
             width, height = _size.split("x")
-            optional_params["width"], optional_params["height"] = (
-                int(width),
-                int(height),
+            optional_params["width"], optional_params["height"] = int(width), int(
+                height
             )
         if non_default_params.get("n") is not None:
             optional_params["numberOfImages"] = non_default_params.get("n")

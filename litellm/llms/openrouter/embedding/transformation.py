@@ -6,7 +6,6 @@ OpenRouter is OpenAI-compatible and supports embeddings via the /v1/embeddings e
 
 Docs: https://openrouter.ai/docs
 """
-
 from typing import TYPE_CHECKING, Any, Optional
 
 import httpx
@@ -170,7 +169,9 @@ class OpenrouterEmbeddingConfig(BaseEmbeddingConfig):
                 optional_params[param] = value
         return optional_params
 
-    def get_error_class(self, error_message: str, status_code: int, headers: Any) -> Any:
+    def get_error_class(
+        self, error_message: str, status_code: int, headers: Any
+    ) -> Any:
         """
         Get the error class for OpenRouter errors.
         """

@@ -5,7 +5,6 @@
 
 from typing import Dict, List, Optional, Union
 
-import litellm
 from litellm._logging import print_verbose, verbose_logger
 from litellm.types.integrations.prometheus import LATENCY_BUCKETS
 from litellm.types.services import (
@@ -32,10 +31,9 @@ class PrometheusServicesLogger:
                 from prometheus_client import REGISTRY, Counter, Gauge, Histogram
                 from prometheus_client.gc_collector import Collector
             except ImportError:
-                raise Exception("Missing prometheus_client. Run `pip install prometheus-client`")
-
-            _custom_buckets = litellm.prometheus_latency_buckets
-            self.latency_buckets = tuple(_custom_buckets) if _custom_buckets is not None else LATENCY_BUCKETS
+                raise Exception(
+                    "Missing prometheus_client. Run `pip install prometheus-client`"
+                )
 
             self.Histogram = Histogram
             self.Counter = Counter
@@ -44,7 +42,9 @@ class PrometheusServicesLogger:
 
             verbose_logger.debug("in init prometheus services metrics")
 
-            self.payload_to_prometheus_map: Dict[str, List[Union[Histogram, Counter, Gauge, Collector]]] = {}
+            self.payload_to_prometheus_map: Dict[
+                str, List[Union[Histogram, Counter, Gauge, Collector]]
+            ] = {}
 
             for service in ServiceTypes:
                 service_metrics: List[Union[Histogram, Counter, Gauge, Collector]] = []
@@ -53,7 +53,9 @@ class PrometheusServicesLogger:
 
                 # Initialize only the configured metrics for each service
                 if ServiceMetrics.HISTOGRAM in metrics_to_initialize:
-                    histogram = self.create_histogram(service.value, type_of_request="latency")
+                    histogram = self.create_histogram(
+                        service.value, type_of_request="latency"
+                    )
                     if histogram:
                         service_metrics.append(histogram)
 
@@ -65,7 +67,9 @@ class PrometheusServicesLogger:
                     )
                     if counter_failed_request:
                         service_metrics.append(counter_failed_request)
-                    counter_total_requests = self.create_counter(service.value, type_of_request="total_requests")
+                    counter_total_requests = self.create_counter(
+                        service.value, type_of_request="total_requests"
+                    )
                     if counter_total_requests:
                         service_metrics.append(counter_total_requests)
 
@@ -87,7 +91,9 @@ class PrometheusServicesLogger:
             print_verbose(f"Got exception on init prometheus client {str(e)}")
             raise e
 
-    def _get_service_metrics_initialize(self, service: ServiceTypes) -> List[ServiceMetrics]:
+    def _get_service_metrics_initialize(
+        self, service: ServiceTypes
+    ) -> List[ServiceMetrics]:
         DEFAULT_METRICS = [ServiceMetrics.COUNTER, ServiceMetrics.HISTOGRAM]
         if service not in DEFAULT_SERVICE_CONFIGS:
             return DEFAULT_METRICS
@@ -124,7 +130,7 @@ class PrometheusServicesLogger:
             metric_name,
             "Latency for {} service".format(service),
             labelnames=[service],
-            buckets=self.latency_buckets,
+            buckets=LATENCY_BUCKETS,
         )
 
     def create_gauge(self, service: str, type_of_request: str):
@@ -132,7 +138,9 @@ class PrometheusServicesLogger:
         is_registered = self.is_metric_registered(metric_name)
         if is_registered:
             return self._get_metric(metric_name)
-        return self.Gauge(metric_name, "Gauge for {} service".format(service), labelnames=[service])
+        return self.Gauge(
+            metric_name, "Gauge for {} service".format(service), labelnames=[service]
+        )
 
     def create_counter(
         self,

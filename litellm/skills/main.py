@@ -34,27 +34,6 @@ DEFAULT_ANTHROPIC_API_BASE = "https://api.anthropic.com/v1"
 _litellm_skills_handler = None
 
 
-def _get_user_api_key_auth_from_kwargs(kwargs: Dict[str, Any]) -> Optional[Any]:
-    for metadata_key in ("metadata", "litellm_metadata"):
-        metadata = kwargs.get(metadata_key)
-        if isinstance(metadata, dict) and metadata.get("user_api_key_auth") is not None:
-            return metadata["user_api_key_auth"]
-    return None
-
-
-def _get_skill_request_metadata(
-    kwargs: Dict[str, Any],
-    extra_body: Optional[Dict[str, Any]],
-) -> Optional[Dict[str, Any]]:
-    if extra_body and isinstance(extra_body.get("metadata"), dict):
-        return extra_body["metadata"]
-
-    metadata = kwargs.get("metadata")
-    if isinstance(metadata, dict) and isinstance(metadata.get("requester_metadata"), dict):
-        return metadata["requester_metadata"]
-    return None
-
-
 def _get_litellm_skills_handler():
     """Lazy initialization of LiteLLM skills handler to avoid import overhead."""
     global _litellm_skills_handler
@@ -186,19 +165,18 @@ def create_skill(
             return _get_litellm_skills_handler().create_skill_handler(
                 display_title=display_title,
                 files=files,
-                metadata=_get_skill_request_metadata(kwargs, extra_body),
+                metadata=extra_body.get("metadata") if extra_body else None,
                 user_id=kwargs.get("user_id"),
-                user_api_key_dict=_get_user_api_key_auth_from_kwargs(kwargs),
                 _is_async=_is_async,
                 logging_obj=litellm_logging_obj,
                 litellm_call_id=litellm_call_id,
             )
 
         # Get provider config for external providers (Anthropic, etc.)
-        skills_api_provider_config: Optional[BaseSkillsAPIConfig] = (
-            ProviderConfigManager.get_provider_skills_api_config(
-                provider=litellm.LlmProviders(custom_llm_provider),
-            )
+        skills_api_provider_config: Optional[
+            BaseSkillsAPIConfig
+        ] = ProviderConfigManager.get_provider_skills_api_config(
+            provider=litellm.LlmProviders(custom_llm_provider),
         )
 
         if skills_api_provider_config is None:
@@ -206,7 +184,9 @@ def create_skill(
 
         # Validate environment and get headers
         headers = extra_headers or {}
-        headers = skills_api_provider_config.validate_environment(headers=headers, litellm_params=litellm_params)
+        headers = skills_api_provider_config.validate_environment(
+            headers=headers, litellm_params=litellm_params
+        )
 
         # Transform request
         request_body = skills_api_provider_config.transform_create_skill_request(
@@ -219,7 +199,9 @@ def create_skill(
         from litellm.llms.anthropic.common_utils import AnthropicModelInfo
 
         api_base = AnthropicModelInfo.get_api_base(litellm_params.api_base)
-        url = skills_api_provider_config.get_complete_url(api_base=api_base, endpoint="skills")
+        url = skills_api_provider_config.get_complete_url(
+            api_base=api_base, endpoint="skills"
+        )
 
         # Pre-call logging
         litellm_logging_obj.update_from_kwargs(
@@ -366,17 +348,16 @@ def list_skills(
             return _get_litellm_skills_handler().list_skills_handler(
                 limit=limit or 20,
                 offset=0,
-                user_api_key_dict=_get_user_api_key_auth_from_kwargs(kwargs),
                 _is_async=_is_async,
                 logging_obj=litellm_logging_obj,
                 litellm_call_id=litellm_call_id,
             )
 
         # Get provider config for external providers (Anthropic, etc.)
-        skills_api_provider_config: Optional[BaseSkillsAPIConfig] = (
-            ProviderConfigManager.get_provider_skills_api_config(
-                provider=litellm.LlmProviders(custom_llm_provider),
-            )
+        skills_api_provider_config: Optional[
+            BaseSkillsAPIConfig
+        ] = ProviderConfigManager.get_provider_skills_api_config(
+            provider=litellm.LlmProviders(custom_llm_provider),
         )
 
         if skills_api_provider_config is None:
@@ -397,7 +378,9 @@ def list_skills(
 
         # Validate environment and get headers
         headers = extra_headers or {}
-        headers = skills_api_provider_config.validate_environment(headers=headers, litellm_params=litellm_params)
+        headers = skills_api_provider_config.validate_environment(
+            headers=headers, litellm_params=litellm_params
+        )
 
         # Transform request
         url, query_params = skills_api_provider_config.transform_list_skills_request(
@@ -540,17 +523,16 @@ def get_skill(
         if custom_llm_provider == LlmProviders.LITELLM_PROXY.value:
             return _get_litellm_skills_handler().get_skill_handler(
                 skill_id=skill_id,
-                user_api_key_dict=_get_user_api_key_auth_from_kwargs(kwargs),
                 _is_async=_is_async,
                 logging_obj=litellm_logging_obj,
                 litellm_call_id=litellm_call_id,
             )
 
         # Get provider config for external providers (Anthropic, etc.)
-        skills_api_provider_config: Optional[BaseSkillsAPIConfig] = (
-            ProviderConfigManager.get_provider_skills_api_config(
-                provider=litellm.LlmProviders(custom_llm_provider),
-            )
+        skills_api_provider_config: Optional[
+            BaseSkillsAPIConfig
+        ] = ProviderConfigManager.get_provider_skills_api_config(
+            provider=litellm.LlmProviders(custom_llm_provider),
         )
 
         if skills_api_provider_config is None:
@@ -558,7 +540,9 @@ def get_skill(
 
         # Validate environment and get headers
         headers = extra_headers or {}
-        headers = skills_api_provider_config.validate_environment(headers=headers, litellm_params=litellm_params)
+        headers = skills_api_provider_config.validate_environment(
+            headers=headers, litellm_params=litellm_params
+        )
 
         # Get API base
         from litellm.llms.anthropic.common_utils import AnthropicModelInfo
@@ -706,17 +690,16 @@ def delete_skill(
         if custom_llm_provider == LlmProviders.LITELLM_PROXY.value:
             return _get_litellm_skills_handler().delete_skill_handler(
                 skill_id=skill_id,
-                user_api_key_dict=_get_user_api_key_auth_from_kwargs(kwargs),
                 _is_async=_is_async,
                 logging_obj=litellm_logging_obj,
                 litellm_call_id=litellm_call_id,
             )
 
         # Get provider config for external providers (Anthropic, etc.)
-        skills_api_provider_config: Optional[BaseSkillsAPIConfig] = (
-            ProviderConfigManager.get_provider_skills_api_config(
-                provider=litellm.LlmProviders(custom_llm_provider),
-            )
+        skills_api_provider_config: Optional[
+            BaseSkillsAPIConfig
+        ] = ProviderConfigManager.get_provider_skills_api_config(
+            provider=litellm.LlmProviders(custom_llm_provider),
         )
 
         if skills_api_provider_config is None:
@@ -724,7 +707,9 @@ def delete_skill(
 
         # Validate environment and get headers
         headers = extra_headers or {}
-        headers = skills_api_provider_config.validate_environment(headers=headers, litellm_params=litellm_params)
+        headers = skills_api_provider_config.validate_environment(
+            headers=headers, litellm_params=litellm_params
+        )
 
         # Get API base
         from litellm.llms.anthropic.common_utils import AnthropicModelInfo

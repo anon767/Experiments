@@ -45,7 +45,9 @@ class PolicyMatcher:
 
         for pattern in patterns:
             # Use existing wildcard pattern matching helper
-            if RouteChecks._route_matches_wildcard_pattern(route=value, pattern=pattern):
+            if RouteChecks._route_matches_wildcard_pattern(
+                route=value, pattern=pattern
+            ):
                 return True
 
         return False
@@ -86,7 +88,9 @@ class PolicyMatcher:
             if not context.tags:
                 return False
             # Match if ANY context tag matches ANY scope tag pattern
-            if not any(PolicyMatcher.matches_pattern(tag, scope_tags) for tag in context.tags):
+            if not any(
+                PolicyMatcher.matches_pattern(tag, scope_tags) for tag in context.tags
+            ):
                 return False
 
         return True
@@ -110,7 +114,9 @@ class PolicyMatcher:
 
         registry = get_attachment_registry()
         if not registry.is_initialized():
-            verbose_proxy_logger.debug("AttachmentRegistry not initialized, returning empty list")
+            verbose_proxy_logger.debug(
+                "AttachmentRegistry not initialized, returning empty list"
+            )
             return []
 
         return registry.get_attached_policies(context)
@@ -166,7 +172,9 @@ class PolicyMatcher:
             if policy is None:
                 continue
             # Policy matches if it has no condition OR condition evaluates to True
-            if policy.condition is None or ConditionEvaluator.evaluate(policy.condition, context):
+            if policy.condition is None or ConditionEvaluator.evaluate(
+                policy.condition, context
+            ):
                 matching_policies.append(policy_name)
 
         return matching_policies

@@ -9,6 +9,7 @@ from typing import Dict, Optional
 
 from .exceptions import AnthropicErrorResponse, AnthropicErrorType
 
+
 # HTTP status code -> Anthropic error type
 # Source: https://docs.anthropic.com/en/api/errors
 ANTHROPIC_ERROR_TYPE_MAP: Dict[int, AnthropicErrorType] = {
@@ -148,7 +149,9 @@ class AnthropicExceptionMapping:
             parsed = None
 
         # If parsed and already in Anthropic format - passthrough
-        if parsed is not None and AnthropicExceptionMapping._is_anthropic_error_dict(parsed):
+        if parsed is not None and AnthropicExceptionMapping._is_anthropic_error_dict(
+            parsed
+        ):
             # Optionally add request_id if provided and not present
             if request_id and "request_id" not in parsed:
                 parsed["request_id"] = request_id
@@ -156,7 +159,9 @@ class AnthropicExceptionMapping:
 
         # Extract message - use parsed dict if available, otherwise raw string
         if parsed is not None:
-            message = AnthropicExceptionMapping._extract_message_from_dict(parsed, raw_message)
+            message = AnthropicExceptionMapping._extract_message_from_dict(
+                parsed, raw_message
+            )
         else:
             message = raw_message
 

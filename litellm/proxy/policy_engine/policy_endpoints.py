@@ -88,7 +88,9 @@ async def list_policies(version_status: Optional[str] = None):
         raise HTTPException(status_code=500, detail="Database not connected")
 
     try:
-        policies = await get_policy_registry().get_all_policies_from_db(prisma_client, version_status=version_status)
+        policies = await get_policy_registry().get_all_policies_from_db(
+            prisma_client, version_status=version_status
+        )
         return PolicyListDBResponse(policies=policies, total_count=len(policies))
     except Exception as e:
         verbose_proxy_logger.exception(f"Error listing policies: {e}")
@@ -258,7 +260,11 @@ async def update_policy_version_status(
         raise
     except Exception as e:
         verbose_proxy_logger.exception(f"Error updating version status: {e}")
-        if "invalid status" in str(e).lower() or "only draft" in str(e).lower() or "cannot promote" in str(e).lower():
+        if (
+            "invalid status" in str(e).lower()
+            or "only draft" in str(e).lower()
+            or "cannot promote" in str(e).lower()
+        ):
             raise HTTPException(status_code=400, detail=str(e))
         if "not found" in str(e).lower():
             raise HTTPException(status_code=404, detail=str(e))
@@ -352,7 +358,9 @@ async def get_policy(policy_id: str):
             prisma_client=prisma_client,
         )
         if result is None:
-            raise HTTPException(status_code=404, detail=f"Policy with ID {policy_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Policy with ID {policy_id} not found"
+            )
         return result
     except HTTPException:
         raise
@@ -398,7 +406,9 @@ async def update_policy(
             prisma_client=prisma_client,
         )
         if existing is None:
-            raise HTTPException(status_code=404, detail=f"Policy with ID {policy_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Policy with ID {policy_id} not found"
+            )
         if getattr(existing, "version_status", "production") != "draft":
             raise HTTPException(
                 status_code=400,
@@ -454,7 +464,9 @@ async def delete_policy(policy_id: str):
             prisma_client=prisma_client,
         )
         if existing is None:
-            raise HTTPException(status_code=404, detail=f"Policy with ID {policy_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Policy with ID {policy_id} not found"
+            )
 
         result = await get_policy_registry().delete_policy_from_db(
             policy_id=policy_id,
@@ -508,7 +520,9 @@ async def get_resolved_guardrails(policy_id: str):
             prisma_client=prisma_client,
         )
         if policy is None:
-            raise HTTPException(status_code=404, detail=f"Policy with ID {policy_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Policy with ID {policy_id} not found"
+            )
 
         # Resolve guardrails
         resolved = await get_policy_registry().resolve_guardrails_from_db(
@@ -639,8 +653,12 @@ async def list_policy_attachments():
         raise HTTPException(status_code=500, detail="Database not connected")
 
     try:
-        attachments = await get_attachment_registry().get_all_attachments_from_db(prisma_client)
-        return PolicyAttachmentListResponse(attachments=attachments, total_count=len(attachments))
+        attachments = await get_attachment_registry().get_all_attachments_from_db(
+            prisma_client
+        )
+        return PolicyAttachmentListResponse(
+            attachments=attachments, total_count=len(attachments)
+        )
     except Exception as e:
         verbose_proxy_logger.exception(f"Error listing policy attachments: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -702,7 +720,9 @@ async def create_policy_attachment(
 
     try:
         # Verify the policy has a production version (attachments resolve against production)
-        policies = await get_policy_registry().get_all_policies_from_db(prisma_client, version_status="production")
+        policies = await get_policy_registry().get_all_policies_from_db(
+            prisma_client, version_status="production"
+        )
         policy_names = {p.policy_name for p in policies}
         if request.policy_name not in policy_names:
             raise HTTPException(

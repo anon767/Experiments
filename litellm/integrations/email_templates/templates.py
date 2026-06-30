@@ -81,7 +81,8 @@ SOFT_BUDGET_ALERT_EMAIL_TEMPLATE = """
 
                     If you have any questions, please send an email to {email_support_contact} <br /> <br />
 
-                    {email_footer}
+                    Best, <br />
+                    The LiteLLM team <br />
 """
 
 TEAM_SOFT_BUDGET_ALERT_EMAIL_TEMPLATE = """
@@ -104,7 +105,8 @@ TEAM_SOFT_BUDGET_ALERT_EMAIL_TEMPLATE = """
 
                     If you have any questions, please send an email to {email_support_contact} <br /> <br />
 
-                    {email_footer}
+                    Best, <br />
+                    The LiteLLM team <br />
 """
 
 MAX_BUDGET_ALERT_EMAIL_TEMPLATE = """
@@ -127,5 +129,6 @@ MAX_BUDGET_ALERT_EMAIL_TEMPLATE = """
 
                     If you have any questions, please send an email to {email_support_contact} <br /> <br />
 
-                    {email_footer}
+                    Best, <br />
+                    The LiteLLM team <br />
 """

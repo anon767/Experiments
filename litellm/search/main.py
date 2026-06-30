@@ -1,7 +1,6 @@
 """
 Main Search function for LiteLLM.
 """
-
 import asyncio
 import contextvars
 from functools import partial
@@ -144,7 +143,9 @@ async def asearch(
             response = init_response
 
         if response is None:
-            raise ValueError(f"Got an unexpected None response from the Search API: {response}")
+            raise ValueError(
+                f"Got an unexpected None response from the Search API: {response}"
+            )
 
         return response
     except Exception as e:
@@ -233,13 +234,17 @@ def search(
 
         # Validate query parameter
         if not isinstance(query, (str, list)):
-            raise ValueError(f"query must be a string or list of strings, got {type(query)}")
+            raise ValueError(
+                f"query must be a string or list of strings, got {type(query)}"
+            )
 
         if isinstance(query, list) and not all(isinstance(q, str) for q in query):
             raise ValueError("All items in query list must be strings")
 
         # Get provider config
-        search_provider_config: Optional[BaseSearchConfig] = ProviderConfigManager.get_provider_search_config(
+        search_provider_config: Optional[
+            BaseSearchConfig
+        ] = ProviderConfigManager.get_provider_search_config(
             provider=SearchProviders(search_provider),
         )
 
@@ -277,7 +282,6 @@ def search(
         complete_url = search_provider_config.get_complete_url(
             api_base=api_base,
             optional_params=optional_params,
-            api_key=api_key,
         )
 
         # Pre Call logging

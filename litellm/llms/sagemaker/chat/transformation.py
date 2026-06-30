@@ -41,8 +41,12 @@ class SagemakerChatConfig(OpenAIGPTConfig, BaseAWSLLM):
         OpenAIGPTConfig.__init__(self, **kwargs)
         BaseAWSLLM.__init__(self, **kwargs)
 
-    def get_error_class(self, error_message: str, status_code: int, headers: Union[dict, Headers]) -> BaseLLMException:
-        return SagemakerError(status_code=status_code, message=error_message, headers=headers)
+    def get_error_class(
+        self, error_message: str, status_code: int, headers: Union[dict, Headers]
+    ) -> BaseLLMException:
+        return SagemakerError(
+            status_code=status_code, message=error_message, headers=headers
+        )
 
     def validate_environment(
         self,
@@ -75,7 +79,9 @@ class SagemakerChatConfig(OpenAIGPTConfig, BaseAWSLLM):
         else:
             api_base = f"https://runtime.sagemaker.{aws_region_name}.amazonaws.com/endpoints/{model}/invocations"
 
-        sagemaker_base_url = cast(Optional[str], optional_params.get("sagemaker_base_url"))
+        sagemaker_base_url = cast(
+            Optional[str], optional_params.get("sagemaker_base_url")
+        )
         if sagemaker_base_url is not None:
             api_base = sagemaker_base_url
 
@@ -137,13 +143,19 @@ class SagemakerChatConfig(OpenAIGPTConfig, BaseAWSLLM):
                 logging_obj=logging_obj,
             )
         except httpx.HTTPStatusError as e:
-            raise SagemakerError(status_code=e.response.status_code, message=e.response.text)
+            raise SagemakerError(
+                status_code=e.response.status_code, message=e.response.text
+            )
 
         if response.status_code != 200:
-            raise SagemakerError(status_code=response.status_code, message=response.text)
+            raise SagemakerError(
+                status_code=response.status_code, message=response.text
+            )
 
         custom_stream_decoder = AWSEventStreamDecoder(model="", is_messages_api=True)
-        completion_stream = custom_stream_decoder.iter_bytes(response.iter_bytes(chunk_size=1024))
+        completion_stream = custom_stream_decoder.iter_bytes(
+            response.iter_bytes(chunk_size=1024)
+        )
 
         streaming_response = CustomStreamWrapper(
             completion_stream=completion_stream,
@@ -183,13 +195,19 @@ class SagemakerChatConfig(OpenAIGPTConfig, BaseAWSLLM):
                 logging_obj=logging_obj,
             )
         except httpx.HTTPStatusError as e:
-            raise SagemakerError(status_code=e.response.status_code, message=e.response.text)
+            raise SagemakerError(
+                status_code=e.response.status_code, message=e.response.text
+            )
 
         if response.status_code != 200:
-            raise SagemakerError(status_code=response.status_code, message=response.text)
+            raise SagemakerError(
+                status_code=response.status_code, message=response.text
+            )
 
         custom_stream_decoder = AWSEventStreamDecoder(model="", is_messages_api=True)
-        completion_stream = custom_stream_decoder.aiter_bytes(response.aiter_bytes(chunk_size=1024))
+        completion_stream = custom_stream_decoder.aiter_bytes(
+            response.aiter_bytes(chunk_size=1024)
+        )
 
         streaming_response = CustomStreamWrapper(
             completion_stream=completion_stream,

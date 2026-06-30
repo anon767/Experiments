@@ -46,7 +46,9 @@ class OpenAIImageGenerationHandler(BaseTranslation):
         """
         prompt = data.get("prompt")
         if prompt is None:
-            verbose_proxy_logger.debug("OpenAI Image Generation: No prompt found in request data")
+            verbose_proxy_logger.debug(
+                "OpenAI Image Generation: No prompt found in request data"
+            )
             return data
 
         # Apply guardrail to the prompt
@@ -66,7 +68,8 @@ class OpenAIImageGenerationHandler(BaseTranslation):
             data["prompt"] = guardrailed_texts[0] if guardrailed_texts else prompt
 
             verbose_proxy_logger.debug(
-                "OpenAI Image Generation: Applied guardrail to prompt. Original length: %d, New length: %d",
+                "OpenAI Image Generation: Applied guardrail to prompt. "
+                "Original length: %d, New length: %d",
                 len(prompt),
                 len(data["prompt"]),
             )
@@ -102,5 +105,7 @@ class OpenAIImageGenerationHandler(BaseTranslation):
         Returns:
             Unmodified response (images don't need text guardrails)
         """
-        verbose_proxy_logger.debug("OpenAI Image Generation: Output processing not needed for image responses")
+        verbose_proxy_logger.debug(
+            "OpenAI Image Generation: Output processing not needed for image responses"
+        )
         return response

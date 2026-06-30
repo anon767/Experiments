@@ -12,10 +12,6 @@ Validates:
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from litellm._logging import verbose_proxy_logger
-from litellm.repositories.team_repository import TeamRepository
-from litellm.repositories.verification_token_repository import (
-    VerificationTokenRepository,
-)
 from litellm.types.proxy.policy_engine import (
     Policy,
     PolicyValidationError,
@@ -74,9 +70,15 @@ class PolicyValidator:
             )
 
             guardrails = IN_MEMORY_GUARDRAIL_HANDLER.list_in_memory_guardrails()
-            return {g.get("guardrail_name", "") for g in guardrails if g.get("guardrail_name")}
+            return {
+                g.get("guardrail_name", "")
+                for g in guardrails
+                if g.get("guardrail_name")
+            }
         except Exception as e:
-            verbose_proxy_logger.warning(f"Could not get guardrails from registry: {str(e)}")
+            verbose_proxy_logger.warning(
+                f"Could not get guardrails from registry: {str(e)}"
+            )
             return set()
 
     async def check_team_alias_exists(self, team_alias: str) -> bool:
@@ -93,12 +95,14 @@ class PolicyValidator:
             return True  # Can't validate without DB, assume valid
 
         try:
-            team = await TeamRepository(self.prisma_client).table.find_first(
+            team = await self.prisma_client.db.litellm_teamtable.find_first(
                 where={"team_alias": team_alias},
             )
             return team is not None
         except Exception as e:
-            verbose_proxy_logger.warning(f"Could not check team alias '{team_alias}': {str(e)}")
+            verbose_proxy_logger.warning(
+                f"Could not check team alias '{team_alias}': {str(e)}"
+            )
             return True  # Assume valid on error
 
     async def check_key_alias_exists(self, key_alias: str) -> bool:
@@ -115,12 +119,14 @@ class PolicyValidator:
             return True  # Can't validate without DB, assume valid
 
         try:
-            key = await VerificationTokenRepository(self.prisma_client).table.find_first(
+            key = await self.prisma_client.db.litellm_verificationtoken.find_first(
                 where={"key_alias": key_alias},
             )
             return key is not None
         except Exception as e:
-            verbose_proxy_logger.warning(f"Could not check key alias '{key_alias}': {str(e)}")
+            verbose_proxy_logger.warning(
+                f"Could not check key alias '{key_alias}': {str(e)}"
+            )
             return True  # Assume valid on error
 
     def check_model_exists(self, model: str) -> bool:
@@ -143,7 +149,11 @@ class PolicyValidator:
 
             # Check if model matches any pattern via pattern router
             if hasattr(self.llm_router, "pattern_router"):
-                pattern_deployments = self.llm_router.pattern_router.get_deployments_by_pattern(model=model)
+                pattern_deployments = (
+                    self.llm_router.pattern_router.get_deployments_by_pattern(
+                        model=model
+                    )
+                )
                 if pattern_deployments:
                     return True
 
@@ -222,7 +232,11 @@ class PolicyValidator:
             else:
                 # Recursively check parent with decremented depth
                 visited.add(policy_name)
-                errors.extend(self._validate_inheritance_chain(policy.inherit, policies, visited, max_depth - 1))
+                errors.extend(
+                    self._validate_inheritance_chain(
+                        policy.inherit, policies, visited, max_depth - 1
+                    )
+                )
 
         return errors
 
@@ -283,7 +297,9 @@ class PolicyValidator:
                 errors.extend(pipeline_errors)
 
             # Validate inheritance
-            inheritance_errors = self._validate_inheritance_chain(policy_name=policy_name, policies=policies)
+            inheritance_errors = self._validate_inheritance_chain(
+                policy_name=policy_name, policies=policies
+            )
             errors.extend(inheritance_errors)
 
         return PolicyValidationResponse(
@@ -314,7 +330,8 @@ class PolicyValidator:
                         policy_name=policy_name,
                         error_type=PolicyValidationErrorType.INVALID_GUARDRAIL,
                         message=(
-                            f"Pipeline step {i} guardrail '{step.guardrail}' is not in the policy's guardrails.add list"
+                            f"Pipeline step {i} guardrail '{step.guardrail}' "
+                            f"is not in the policy's guardrails.add list"
                         ),
                         field="pipeline.steps",
                         value=step.guardrail,
@@ -327,7 +344,10 @@ class PolicyValidator:
                     PolicyValidationError(
                         policy_name=policy_name,
                         error_type=PolicyValidationErrorType.INVALID_GUARDRAIL,
-                        message=(f"Pipeline step {i} guardrail '{step.guardrail}' not found in guardrail registry"),
+                        message=(
+                            f"Pipeline step {i} guardrail '{step.guardrail}' "
+                            f"not found in guardrail registry"
+                        ),
                         field="pipeline.steps",
                         value=step.guardrail,
                     )

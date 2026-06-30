@@ -8,7 +8,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../.."))  # Adds the parent directory to the system path
+sys.path.insert(
+    0, os.path.abspath("../..")
+)  # Adds the parent directory to the system path
 import json
 import sys
 from typing import TYPE_CHECKING, Any, List, Literal, Optional, Type
@@ -37,8 +39,12 @@ if TYPE_CHECKING:
 
 
 class AporiaGuardrail(CustomGuardrail):
-    def __init__(self, api_key: Optional[str] = None, api_base: Optional[str] = None, **kwargs):
-        self.async_handler = get_async_httpx_client(llm_provider=httpxSpecialProvider.GuardrailCallback)
+    def __init__(
+        self, api_key: Optional[str] = None, api_base: Optional[str] = None, **kwargs
+    ):
+        self.async_handler = get_async_httpx_client(
+            llm_provider=httpxSpecialProvider.GuardrailCallback
+        )
         self.aporia_api_key = api_key or os.environ["APORIO_API_KEY"]
         self.aporia_api_base = api_base or os.environ["APORIO_API_BASE"]
         super().__init__(**kwargs)
@@ -61,7 +67,9 @@ class AporiaGuardrail(CustomGuardrail):
 
         return new_messages
 
-    async def prepare_aporia_request(self, new_messages: List[dict], response_string: Optional[str] = None) -> dict:
+    async def prepare_aporia_request(
+        self, new_messages: List[dict], response_string: Optional[str] = None
+    ) -> dict:
         data: dict[str, Any] = {}
         if new_messages is not None:
             data["messages"] = new_messages
@@ -85,9 +93,13 @@ class AporiaGuardrail(CustomGuardrail):
         new_messages: List[dict],
         response_string: Optional[str] = None,
     ):
-        data = await self.prepare_aporia_request(new_messages=new_messages, response_string=response_string)
+        data = await self.prepare_aporia_request(
+            new_messages=new_messages, response_string=response_string
+        )
 
-        data.update(self.get_guardrail_dynamic_request_body_params(request_data=request_data))
+        data.update(
+            self.get_guardrail_dynamic_request_body_params(request_data=request_data)
+        )
 
         _json_data = json.dumps(data)
 
@@ -120,7 +132,9 @@ class AporiaGuardrail(CustomGuardrail):
         if response.status_code == 200:
             # check if the response was flagged
             _json_response = response.json()
-            action: str = _json_response.get("action")  # possible values are modify, passthrough, block, rephrase
+            action: str = _json_response.get(
+                "action"
+            )  # possible values are modify, passthrough, block, rephrase
             if action == "block":
                 raise HTTPException(
                     status_code=400,
@@ -156,7 +170,9 @@ class AporiaGuardrail(CustomGuardrail):
                 new_messages=data.get("messages", []),
             )
 
-            add_guardrail_to_applied_guardrails_header(request_data=data, guardrail_name=self.guardrail_name)
+            add_guardrail_to_applied_guardrails_header(
+                request_data=data, guardrail_name=self.guardrail_name
+            )
 
         pass
 
@@ -207,9 +223,13 @@ class AporiaGuardrail(CustomGuardrail):
                 request_data=data,
                 new_messages=new_messages,
             )
-            add_guardrail_to_applied_guardrails_header(request_data=data, guardrail_name=self.guardrail_name)
+            add_guardrail_to_applied_guardrails_header(
+                request_data=data, guardrail_name=self.guardrail_name
+            )
         else:
-            verbose_proxy_logger.warning("Aporia AI: not running guardrail. No messages in data")
+            verbose_proxy_logger.warning(
+                "Aporia AI: not running guardrail. No messages in data"
+            )
             pass
 
     @staticmethod

@@ -2,8 +2,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-from litellm.litellm_core_utils.secret_redaction import redact_string
-
 from .exceptions import UnauthorizedError
 
 
@@ -91,7 +89,9 @@ class KeysManagementClient:
         if include_team_keys is not None:
             params["include_team_keys"] = str(include_team_keys).lower()
 
-        request = requests.Request("GET", url, headers=self._get_headers(), params=params)
+        request = requests.Request(
+            "GET", url, headers=self._get_headers(), params=params
+        )
 
         if return_request:
             return request
@@ -285,7 +285,9 @@ class KeysManagementClient:
         except Exception:
             raise Exception(f"Error updating key: {response_text}")
 
-    def info(self, key: str, return_request: bool = False) -> Union[Dict[str, Any], requests.Request]:
+    def info(
+        self, key: str, return_request: bool = False
+    ) -> Union[Dict[str, Any], requests.Request]:
         """
         Get information about API keys.
 
@@ -312,7 +314,6 @@ class KeysManagementClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:
-            redacted_message = redact_string(str(e))
             if e.response.status_code == 401:
-                raise UnauthorizedError(e) from None
-            raise requests.exceptions.HTTPError(redacted_message, response=e.response) from None
+                raise UnauthorizedError(e)
+            raise

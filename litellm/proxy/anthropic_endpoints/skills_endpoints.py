@@ -84,7 +84,11 @@ async def create_skill(
     data = await convert_upload_files_to_file_data(form_data)
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -187,7 +191,11 @@ async def list_skills(
         data["before_id"] = before_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -284,7 +292,11 @@ async def get_skill(
     data["skill_id"] = skill_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -383,7 +395,11 @@ async def delete_skill(
     data["skill_id"] = skill_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 

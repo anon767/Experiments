@@ -3,21 +3,9 @@ BitBucket API client for fetching .prompt files from BitBucket repositories.
 """
 
 import base64
-import urllib.parse
 from typing import Any, Dict, List, Optional
 
 from litellm.llms.custom_httpx.http_handler import HTTPHandler
-
-
-def _sanitize_file_path(file_path: str) -> str:
-    """Reject path traversal and URL-encode each path segment."""
-    if "#" in file_path or "?" in file_path:
-        raise ValueError(f"Invalid file path {file_path!r}: contains URL special characters")
-    parts = file_path.split("/")
-    for part in parts:
-        if part == "..":
-            raise ValueError(f"Invalid file path {file_path!r}: path traversal detected")
-    return "/".join(urllib.parse.quote(part, safe="") for part in parts)
 
 
 class BitBucketClient:
@@ -84,8 +72,7 @@ class BitBucketClient:
         Returns:
             File content as string, or None if file not found
         """
-        safe_path = _sanitize_file_path(file_path)
-        url = f"{self.base_url}/repositories/{self.workspace}/{self.repository}/src/{self.branch}/{safe_path}"
+        url = f"{self.base_url}/repositories/{self.workspace}/{self.repository}/src/{self.branch}/{file_path}"
 
         try:
             response = self.http_handler.get(url, headers=self.headers)
@@ -111,13 +98,17 @@ class BitBucketClient:
                         f"Access denied to file '{file_path}'. Check your BitBucket permissions for workspace '{self.workspace}' and repository '{self.repository}'."
                     )
                 elif e.response.status_code == 401:
-                    raise Exception("Authentication failed. Check your BitBucket access token and permissions.")
+                    raise Exception(
+                        "Authentication failed. Check your BitBucket access token and permissions."
+                    )
                 else:
                     raise Exception(f"Failed to fetch file '{file_path}': {e}")
             else:
                 raise Exception(f"Error fetching file '{file_path}': {e}")
 
-    def list_files(self, directory_path: str = "", file_extension: str = ".prompt") -> List[str]:
+    def list_files(
+        self, directory_path: str = "", file_extension: str = ".prompt"
+    ) -> List[str]:
         """
         List files in a directory with a specific extension.
 
@@ -128,8 +119,7 @@ class BitBucketClient:
         Returns:
             List of file paths
         """
-        safe_dir = _sanitize_file_path(directory_path) if directory_path else ""
-        url = f"{self.base_url}/repositories/{self.workspace}/{self.repository}/src/{self.branch}/{safe_dir}"
+        url = f"{self.base_url}/repositories/{self.workspace}/{self.repository}/src/{self.branch}/{directory_path}"
 
         try:
             response = self.http_handler.get(url, headers=self.headers)
@@ -156,7 +146,9 @@ class BitBucketClient:
                         f"Access denied to directory '{directory_path}'. Check your BitBucket permissions for workspace '{self.workspace}' and repository '{self.repository}'."
                     )
                 elif e.response.status_code == 401:
-                    raise Exception("Authentication failed. Check your BitBucket access token and permissions.")
+                    raise Exception(
+                        "Authentication failed. Check your BitBucket access token and permissions."
+                    )
                 else:
                     raise Exception(f"Failed to list files in '{directory_path}': {e}")
             else:
@@ -219,8 +211,7 @@ class BitBucketClient:
         Returns:
             Dictionary containing file metadata, or None if file not found
         """
-        safe_path = _sanitize_file_path(file_path)
-        url = f"{self.base_url}/repositories/{self.workspace}/{self.repository}/src/{self.branch}/{safe_path}"
+        url = f"{self.base_url}/repositories/{self.workspace}/{self.repository}/src/{self.branch}/{file_path}"
 
         try:
             # Use GET with Range header to get just the headers (HEAD equivalent)

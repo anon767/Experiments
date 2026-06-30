@@ -21,19 +21,23 @@ config = HuggingFaceEmbeddingConfig()
 
 HF_HUB_URL = "https://huggingface.co"
 
-hf_tasks_embeddings = (
-    Literal[  # pipeline tags + hf tei endpoints - https://huggingface.github.io/text-embeddings-inference/#/
-        "sentence-similarity", "feature-extraction", "rerank", "embed", "similarity"
-    ]
-)
+hf_tasks_embeddings = Literal[  # pipeline tags + hf tei endpoints - https://huggingface.github.io/text-embeddings-inference/#/
+    "sentence-similarity", "feature-extraction", "rerank", "embed", "similarity"
+]
 
 
-def get_hf_task_embedding_for_model(model: str, task_type: Optional[str], api_base: str) -> Optional[str]:
+def get_hf_task_embedding_for_model(
+    model: str, task_type: Optional[str], api_base: str
+) -> Optional[str]:
     if task_type is not None:
         if task_type in get_args(hf_tasks_embeddings):
             return task_type
         else:
-            raise Exception("Invalid task_type={}. Expected one of={}".format(task_type, hf_tasks_embeddings))
+            raise Exception(
+                "Invalid task_type={}. Expected one of={}".format(
+                    task_type, hf_tasks_embeddings
+                )
+            )
     http_client = HTTPHandler(concurrent_limit=1)
 
     model_info = http_client.get(url=f"{api_base}/api/models/{model}")
@@ -45,12 +49,18 @@ def get_hf_task_embedding_for_model(model: str, task_type: Optional[str], api_ba
     return pipeline_tag
 
 
-async def async_get_hf_task_embedding_for_model(model: str, task_type: Optional[str], api_base: str) -> Optional[str]:
+async def async_get_hf_task_embedding_for_model(
+    model: str, task_type: Optional[str], api_base: str
+) -> Optional[str]:
     if task_type is not None:
         if task_type in get_args(hf_tasks_embeddings):
             return task_type
         else:
-            raise Exception("Invalid task_type={}. Expected one of={}".format(task_type, hf_tasks_embeddings))
+            raise Exception(
+                "Invalid task_type={}. Expected one of={}".format(
+                    task_type, hf_tasks_embeddings
+                )
+            )
     http_client = get_async_httpx_client(
         llm_provider=litellm.LlmProviders.HUGGINGFACE,
     )
@@ -71,7 +81,9 @@ class HuggingFaceEmbedding(BaseLLM):
     def __init__(self) -> None:
         super().__init__()
 
-    def _transform_input_on_pipeline_tag(self, input: List, pipeline_tag: Optional[str]) -> dict:
+    def _transform_input_on_pipeline_tag(
+        self, input: List, pipeline_tag: Optional[str]
+    ) -> dict:
         if pipeline_tag is None:
             return {"inputs": input}
         if pipeline_tag == "sentence-similarity" or pipeline_tag == "similarity":
@@ -98,7 +110,9 @@ class HuggingFaceEmbedding(BaseLLM):
         input: List,
         optional_params: dict,
     ) -> dict:
-        hf_task = await async_get_hf_task_embedding_for_model(model=model, task_type=task_type, api_base=HF_HUB_URL)
+        hf_task = await async_get_hf_task_embedding_for_model(
+            model=model, task_type=task_type, api_base=HF_HUB_URL
+        )
 
         data = self._transform_input_on_pipeline_tag(input=input, pipeline_tag=hf_task)
 
@@ -155,14 +169,22 @@ class HuggingFaceEmbedding(BaseLLM):
             task_type = optional_params.pop("input_type", None)
 
             if call_type == "sync":
-                hf_task = get_hf_task_embedding_for_model(model=model, task_type=task_type, api_base=HF_HUB_URL)
+                hf_task = get_hf_task_embedding_for_model(
+                    model=model, task_type=task_type, api_base=HF_HUB_URL
+                )
             elif call_type == "async":
-                return self._async_transform_input(model=model, task_type=task_type, embed_url=embed_url, input=input)  # type: ignore
+                return self._async_transform_input(
+                    model=model, task_type=task_type, embed_url=embed_url, input=input
+                )  # type: ignore
 
-            data = self._transform_input_on_pipeline_tag(input=input, pipeline_tag=hf_task)
+            data = self._transform_input_on_pipeline_tag(
+                input=input, pipeline_tag=hf_task
+            )
 
         if len(optional_params.keys()) > 0:
-            data = self._process_optional_params(data=data, optional_params=optional_params)
+            data = self._process_optional_params(
+                data=data, optional_params=optional_params
+            )
 
         return data
 
@@ -207,7 +229,9 @@ class HuggingFaceEmbedding(BaseLLM):
                         {
                             "object": "embedding",
                             "index": idx,
-                            "embedding": embedding[0][0],  # flatten list returned from hf
+                            "embedding": embedding[0][
+                                0
+                            ],  # flatten list returned from hf
                         }
                     )
         model_response.object = "list"
@@ -215,7 +239,7 @@ class HuggingFaceEmbedding(BaseLLM):
         model_response.model = model
         input_tokens = 0
         for text in input:
-            input_tokens += len(encoding.encode(text, disallowed_special=()))
+            input_tokens += len(encoding.encode(text))
 
         setattr(
             model_response,
@@ -319,7 +343,9 @@ class HuggingFaceEmbedding(BaseLLM):
             litellm_params=litellm_params,
         )
         task_type = optional_params.get("input_type", None)
-        task = get_hf_task_embedding_for_model(model=model, task_type=task_type, api_base=HF_HUB_URL)
+        task = get_hf_task_embedding_for_model(
+            model=model, task_type=task_type, api_base=HF_HUB_URL
+        )
         # print_verbose(f"{model}, {task}")
         embed_url = ""
         if "https" in model:
@@ -331,7 +357,9 @@ class HuggingFaceEmbedding(BaseLLM):
         elif "HUGGINGFACE_API_BASE" in os.environ:
             embed_url = os.getenv("HUGGINGFACE_API_BASE", "")
         else:
-            embed_url = f"https://router.huggingface.co/hf-inference/pipeline/{task}/{model}"
+            embed_url = (
+                f"https://router.huggingface.co/hf-inference/pipeline/{task}/{model}"
+            )
 
         ## ROUTING ##
         if aembedding is True:

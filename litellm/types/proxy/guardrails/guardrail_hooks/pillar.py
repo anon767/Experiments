@@ -1,7 +1,6 @@
 """
 Pillar Security Guardrail Config Model
 """
-
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -42,7 +41,9 @@ class PillarGuardrailConfigModelOptionalParams(BaseModel):
     )
 
 
-class PillarGuardrailConfigModel(GuardrailConfigModel[PillarGuardrailConfigModelOptionalParams]):
+class PillarGuardrailConfigModel(
+    GuardrailConfigModel[PillarGuardrailConfigModelOptionalParams]
+):
     """Configuration parameters for the Pillar Security guardrail"""
 
     api_key: Optional[str] = Field(

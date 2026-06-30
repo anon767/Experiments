@@ -52,28 +52,20 @@ class MCPToolRegistry:
         List all registered tools
         """
         if tool_prefix:
-            return [tool for tool in self.tools.values() if tool.name.startswith(tool_prefix)]
+            return [
+                tool
+                for tool in self.tools.values()
+                if tool.name.startswith(tool_prefix)
+            ]
         return list(self.tools.values())
 
-    def unregister_tools_with_prefix(self, prefix: str) -> int:
-        """Remove tools whose registered name starts with ``prefix``.
-
-        Used when an OpenAPI-backed MCP server leaves the runtime registry so
-        stale tool handlers cannot be invoked after eviction.
-        """
-        if not prefix:
-            return 0
-        removed = 0
-        for name in list(self.tools.keys()):
-            if name.startswith(prefix):
-                del self.tools[name]
-                removed += 1
-                verbose_logger.debug("Unregistered MCP tool %s", name)
-        return removed
-
-    def convert_tools_to_mcp_sdk_tool_type(self, tools: List[MCPTool]) -> List["MCPToolSDKTool"]:
+    def convert_tools_to_mcp_sdk_tool_type(
+        self, tools: List[MCPTool]
+    ) -> List["MCPToolSDKTool"]:
         if MCPToolSDKTool is None:
-            raise ImportError("MCP SDK is not installed. Please install it with: pip install 'litellm[proxy]'")
+            raise ImportError(
+                "MCP SDK is not installed. Please install it with: pip install 'litellm[proxy]'"
+            )
         return [
             MCPToolSDKTool(
                 name=tool.name,
@@ -84,23 +76,18 @@ class MCPToolRegistry:
         ]
 
     def load_tools_from_config(
-        self,
-        mcp_tools_config: Optional[Dict[str, Any]] = None,
-        config_file_path: Optional[str] = None,
+        self, mcp_tools_config: Optional[Dict[str, Any]] = None
     ) -> None:
         """
         Load and register tools from the proxy config
 
         Args:
             mcp_tools_config: The mcp_tools config from the proxy config
-            config_file_path: Path to the operator's config.yaml. Threaded
-                through to ``get_instance_fn`` so an ``s3://``/``gcs://``
-                ``handler`` declared in the YAML resolves; callers from a
-                non-YAML path must leave this ``None`` so the runtime gate
-                fires.
         """
         if mcp_tools_config is None:
-            raise ValueError("mcp_tools_config is required, please set `mcp_tools` in your proxy config")
+            raise ValueError(
+                "mcp_tools_config is required, please set `mcp_tools` in your proxy config"
+            )
 
         for tool_config in mcp_tools_config:
             if not isinstance(tool_config, dict):
@@ -118,10 +105,12 @@ class MCPToolRegistry:
             # First check if it's a module path (e.g., "module.submodule.function")
             if handler_name is None:
                 raise ValueError(f"handler is required for tool {name}")
-            handler = get_instance_fn(handler_name, config_file_path)
+            handler = get_instance_fn(handler_name)
 
             if handler is None:
-                verbose_logger.warning(f"Warning: Could not find handler {handler_name} for tool {name}")
+                verbose_logger.warning(
+                    f"Warning: Could not find handler {handler_name} for tool {name}"
+                )
                 continue
 
             # Register the tool
@@ -136,7 +125,9 @@ class MCPToolRegistry:
                 input_schema=input_schema,
                 handler=handler,
             )
-        verbose_logger.debug("all registered tools: %s", json.dumps(self.tools, indent=4, default=str))
+        verbose_logger.debug(
+            "all registered tools: %s", json.dumps(self.tools, indent=4, default=str)
+        )
 
 
 global_mcp_tool_registry = MCPToolRegistry()

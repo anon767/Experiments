@@ -1,7 +1,6 @@
 """
 Response Polling Handler for Background Responses with Cache
 """
-
 import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -77,7 +76,9 @@ class ResponsePollingHandler:
                 value=response.model_dump_json(),  # Pydantic v2 method
                 ttl=self.ttl,
             )
-            verbose_proxy_logger.debug(f"Created initial polling state for {polling_id} with TTL={self.ttl}s")
+            verbose_proxy_logger.debug(
+                f"Created initial polling state for {polling_id} with TTL={self.ttl}s"
+            )
 
         return response
 
@@ -141,7 +142,9 @@ class ResponsePollingHandler:
         # Get current state
         cached_state = await self.redis_cache.async_get_cache(cache_key)
         if not cached_state:
-            verbose_proxy_logger.warning(f"No cached state found for polling_id: {polling_id}")
+            verbose_proxy_logger.warning(
+                f"No cached state found for polling_id: {polling_id}"
+            )
             return
 
         # Parse existing ResponsesAPIResponse from cache
@@ -254,7 +257,9 @@ def should_use_polling_for_request(
     redis_cache,  # RedisCache or None
     model: str,
     llm_router,  # Router instance or None
-    native_background_mode: Optional[List[str]] = None,  # List of models that should use native background mode
+    native_background_mode: Optional[
+        List[str]
+    ] = None,  # List of models that should use native background mode
 ) -> bool:
     """
     Determine if polling via cache should be used for a request.
@@ -277,7 +282,9 @@ def should_use_polling_for_request(
 
     # Check if model is in native_background_mode list - these use native provider background mode
     if native_background_mode and model in native_background_mode:
-        verbose_proxy_logger.debug(f"Model {model} is in native_background_mode list, skipping polling via cache")
+        verbose_proxy_logger.debug(
+            f"Model {model} is in native_background_mode list, skipping polling via cache"
+        )
         return False
 
     # "all" enables polling for all providers
@@ -311,9 +318,13 @@ def should_use_polling_for_request(
 
                     # If ANY deployment's provider matches, enable polling
                     if dep_provider and dep_provider in polling_via_cache_enabled:
-                        verbose_proxy_logger.debug(f"Polling enabled for model={model}, provider={dep_provider}")
+                        verbose_proxy_logger.debug(
+                            f"Polling enabled for model={model}, provider={dep_provider}"
+                        )
                         return True
             except Exception as e:
-                verbose_proxy_logger.debug(f"Could not resolve provider for model {model}: {e}")
+                verbose_proxy_logger.debug(
+                    f"Could not resolve provider for model {model}: {e}"
+                )
 
     return False

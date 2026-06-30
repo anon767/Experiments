@@ -18,7 +18,6 @@ from litellm.types.utils import LlmProviders
 
 if TYPE_CHECKING:
     from litellm.litellm_core_utils.litellm_logging import Logging as LiteLLMLoggingObj
-    from litellm.proxy._types import UserAPIKeyAuth
 
 
 class LiteLLMSkillsTransformationHandler:
@@ -45,7 +44,6 @@ class LiteLLMSkillsTransformationHandler:
         file_type: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         user_id: Optional[str] = None,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
         _is_async: bool = False,
         logging_obj: Optional["LiteLLMLoggingObj"] = None,
         litellm_call_id: Optional[str] = None,
@@ -87,7 +85,9 @@ class LiteLLMSkillsTransformationHandler:
                 if isinstance(first_file, tuple) and len(first_file) >= 2:
                     file_name = first_file[0]
                     file_content = first_file[1]
-                    file_type = first_file[2] if len(first_file) > 2 else "application/zip"
+                    file_type = (
+                        first_file[2] if len(first_file) > 2 else "application/zip"
+                    )
 
         if _is_async:
             return self._async_create_skill(
@@ -99,7 +99,6 @@ class LiteLLMSkillsTransformationHandler:
                 file_type=file_type,
                 metadata=metadata,
                 user_id=user_id,
-                user_api_key_dict=user_api_key_dict,
             )
 
         import asyncio
@@ -114,7 +113,6 @@ class LiteLLMSkillsTransformationHandler:
                 file_type=file_type,
                 metadata=metadata,
                 user_id=user_id,
-                user_api_key_dict=user_api_key_dict,
             )
         )
 
@@ -128,7 +126,6 @@ class LiteLLMSkillsTransformationHandler:
         file_type: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         user_id: Optional[str] = None,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
     ) -> Skill:
         """Async implementation of create_skill."""
         # Lazy import to avoid SDK dependency on proxy
@@ -148,7 +145,6 @@ class LiteLLMSkillsTransformationHandler:
         db_skill = await LiteLLMSkillsHandler.create_skill(
             data=skill_request,
             user_id=user_id,
-            user_api_key_dict=user_api_key_dict,
         )
 
         return self._db_skill_to_response(db_skill)
@@ -160,7 +156,6 @@ class LiteLLMSkillsTransformationHandler:
         _is_async: bool = False,
         logging_obj: Optional["LiteLLMLoggingObj"] = None,
         litellm_call_id: Optional[str] = None,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
         **kwargs,
     ) -> Union[ListSkillsResponse, Coroutine[Any, Any, ListSkillsResponse]]:
         """
@@ -187,27 +182,18 @@ class LiteLLMSkillsTransformationHandler:
             )
 
         if _is_async:
-            return self._async_list_skills(
-                limit=limit,
-                offset=offset,
-                user_api_key_dict=user_api_key_dict,
-            )
+            return self._async_list_skills(limit=limit, offset=offset)
 
         import asyncio
 
         return asyncio.get_event_loop().run_until_complete(
-            self._async_list_skills(
-                limit=limit,
-                offset=offset,
-                user_api_key_dict=user_api_key_dict,
-            )
+            self._async_list_skills(limit=limit, offset=offset)
         )
 
     async def _async_list_skills(
         self,
         limit: int = 20,
         offset: int = 0,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
     ) -> ListSkillsResponse:
         """Async implementation of list_skills."""
         # Lazy import to avoid SDK dependency on proxy
@@ -216,7 +202,6 @@ class LiteLLMSkillsTransformationHandler:
         db_skills = await LiteLLMSkillsHandler.list_skills(
             limit=limit,
             offset=offset,
-            user_api_key_dict=user_api_key_dict,
         )
 
         skills = [self._db_skill_to_response(s) for s in db_skills]
@@ -232,7 +217,6 @@ class LiteLLMSkillsTransformationHandler:
         _is_async: bool = False,
         logging_obj: Optional["LiteLLMLoggingObj"] = None,
         litellm_call_id: Optional[str] = None,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
         **kwargs,
     ) -> Union[Skill, Coroutine[Any, Any, Skill]]:
         """
@@ -258,33 +242,20 @@ class LiteLLMSkillsTransformationHandler:
             )
 
         if _is_async:
-            return self._async_get_skill(
-                skill_id=skill_id,
-                user_api_key_dict=user_api_key_dict,
-            )
+            return self._async_get_skill(skill_id=skill_id)
 
         import asyncio
 
         return asyncio.get_event_loop().run_until_complete(
-            self._async_get_skill(
-                skill_id=skill_id,
-                user_api_key_dict=user_api_key_dict,
-            )
+            self._async_get_skill(skill_id=skill_id)
         )
 
-    async def _async_get_skill(
-        self,
-        skill_id: str,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
-    ) -> Skill:
+    async def _async_get_skill(self, skill_id: str) -> Skill:
         """Async implementation of get_skill."""
         # Lazy import to avoid SDK dependency on proxy
         from litellm.llms.litellm_proxy.skills.handler import LiteLLMSkillsHandler
 
-        db_skill = await LiteLLMSkillsHandler.get_skill(
-            skill_id=skill_id,
-            user_api_key_dict=user_api_key_dict,
-        )
+        db_skill = await LiteLLMSkillsHandler.get_skill(skill_id=skill_id)
         return self._db_skill_to_response(db_skill)
 
     def delete_skill_handler(
@@ -293,7 +264,6 @@ class LiteLLMSkillsTransformationHandler:
         _is_async: bool = False,
         logging_obj: Optional["LiteLLMLoggingObj"] = None,
         litellm_call_id: Optional[str] = None,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
         **kwargs,
     ) -> Union[DeleteSkillResponse, Coroutine[Any, Any, DeleteSkillResponse]]:
         """
@@ -319,33 +289,20 @@ class LiteLLMSkillsTransformationHandler:
             )
 
         if _is_async:
-            return self._async_delete_skill(
-                skill_id=skill_id,
-                user_api_key_dict=user_api_key_dict,
-            )
+            return self._async_delete_skill(skill_id=skill_id)
 
         import asyncio
 
         return asyncio.get_event_loop().run_until_complete(
-            self._async_delete_skill(
-                skill_id=skill_id,
-                user_api_key_dict=user_api_key_dict,
-            )
+            self._async_delete_skill(skill_id=skill_id)
         )
 
-    async def _async_delete_skill(
-        self,
-        skill_id: str,
-        user_api_key_dict: Optional["UserAPIKeyAuth"] = None,
-    ) -> DeleteSkillResponse:
+    async def _async_delete_skill(self, skill_id: str) -> DeleteSkillResponse:
         """Async implementation of delete_skill."""
         # Lazy import to avoid SDK dependency on proxy
         from litellm.llms.litellm_proxy.skills.handler import LiteLLMSkillsHandler
 
-        result = await LiteLLMSkillsHandler.delete_skill(
-            skill_id=skill_id,
-            user_api_key_dict=user_api_key_dict,
-        )
+        result = await LiteLLMSkillsHandler.delete_skill(skill_id=skill_id)
         return DeleteSkillResponse(
             id=result["id"],
             type=result.get("type", "skill_deleted"),

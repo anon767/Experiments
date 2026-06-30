@@ -2,7 +2,7 @@
 Pydantic AI provider configuration.
 """
 
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict
 
 from litellm.a2a_protocol.providers.base import BaseA2AProviderConfig
 from litellm.a2a_protocol.providers.pydantic_ai_agents.handler import PydanticAIHandler
@@ -20,30 +20,25 @@ class PydanticAIProviderConfig(BaseA2AProviderConfig):
         self,
         request_id: str,
         params: Dict[str, Any],
-        api_base: Optional[str] = None,
-        **kwargs: Any,
+        api_base: str,
+        **kwargs,
     ) -> Dict[str, Any]:
         """Handle non-streaming request to Pydantic AI agent."""
-        if api_base is None:
-            raise ValueError("api_base is required for PydanticAIProviderConfig")
         return await PydanticAIHandler.handle_non_streaming(
             request_id=request_id,
             params=params,
             api_base=api_base,
             timeout=kwargs.get("timeout", 60.0),
-            agent_extra_headers=kwargs.get("agent_extra_headers"),
         )
 
     async def handle_streaming(
         self,
         request_id: str,
         params: Dict[str, Any],
-        api_base: Optional[str] = None,
+        api_base: str,
         **kwargs,
     ) -> AsyncIterator[Dict[str, Any]]:
         """Handle streaming request with fake streaming."""
-        if not api_base:
-            raise ValueError("api_base is required for Pydantic AI agents")
         async for chunk in PydanticAIHandler.handle_streaming(
             request_id=request_id,
             params=params,
@@ -51,6 +46,5 @@ class PydanticAIProviderConfig(BaseA2AProviderConfig):
             timeout=kwargs.get("timeout", 60.0),
             chunk_size=kwargs.get("chunk_size", 50),
             delay_ms=kwargs.get("delay_ms", 10),
-            agent_extra_headers=kwargs.get("agent_extra_headers"),
         ):
             yield chunk

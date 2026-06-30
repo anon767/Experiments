@@ -37,7 +37,9 @@ class AudioTranscriptionRequestData:
 
 class BaseAudioTranscriptionConfig(BaseConfig, ABC):
     @abstractmethod
-    def get_supported_openai_params(self, model: str) -> List[OpenAIAudioTranscriptionOptionalParams]:
+    def get_supported_openai_params(
+        self, model: str
+    ) -> List[OpenAIAudioTranscriptionOptionalParams]:
         pass
 
     def get_complete_url(

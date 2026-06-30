@@ -44,8 +44,8 @@
       "icon_url": "https://cdn.simpleicons.org/linear",
       "category": "Developer Tools",
       "registry_url": "https://registry.modelcontextprotocol.io/servers/app.linear%2Flinear",
-      "transport": "http",
-      "url": "https://mcp.linear.app/mcp",
+      "transport": "sse",
+      "url": "https://mcp.linear.app/sse",
       "env_vars": []
     },
     {

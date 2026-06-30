@@ -12,7 +12,9 @@ class VantageInitRequest(BaseModel):
     """Request model for initializing Vantage settings"""
 
     api_key: str = Field(..., description="Vantage API key for authentication")
-    integration_token: str = Field(..., description="Vantage integration token for the cost-import endpoint")
+    integration_token: str = Field(
+        ..., description="Vantage integration token for the cost-import endpoint"
+    )
     base_url: str = Field(
         default="https://api.vantage.sh",
         description="Vantage API base URL (default: https://api.vantage.sh)",
@@ -40,14 +42,20 @@ class VantageExportRequest(BaseModel):
         None,
         description="Optional limit on number of records to export (default: no limit)",
     )
-    start_time_utc: Optional[datetime] = Field(None, description="Start time for data export in UTC")
-    end_time_utc: Optional[datetime] = Field(None, description="End time for data export in UTC")
+    start_time_utc: Optional[datetime] = Field(
+        None, description="Start time for data export in UTC"
+    )
+    end_time_utc: Optional[datetime] = Field(
+        None, description="End time for data export in UTC"
+    )
 
 
 class VantageDryRunRequest(BaseModel):
     """Request model for Vantage dry-run operations (capped for preview)"""
 
-    limit: Optional[int] = Field(500, description="Limit on number of records to preview (default: 500)")
+    limit: Optional[int] = Field(
+        500, description="Limit on number of records to preview (default: 500)"
+    )
 
 
 class VantageExportResponse(BaseModel):
@@ -58,7 +66,9 @@ class VantageExportResponse(BaseModel):
     dry_run_data: Optional[Dict[str, Any]] = Field(
         None, description="Dry run data including usage data and FOCUS transformed data"
     )
-    summary: Optional[Dict[str, Any]] = Field(None, description="Summary statistics for dry run")
+    summary: Optional[Dict[str, Any]] = Field(
+        None, description="Summary statistics for dry run"
+    )
 
 
 class VantageSettingsView(BaseModel):
@@ -79,8 +89,12 @@ class VantageSettingsView(BaseModel):
 class VantageSettingsUpdate(BaseModel):
     """Request model for updating Vantage settings"""
 
-    api_key: Optional[str] = Field(None, description="New Vantage API key for authentication")
-    integration_token: Optional[str] = Field(None, description="New Vantage integration token")
+    api_key: Optional[str] = Field(
+        None, description="New Vantage API key for authentication"
+    )
+    integration_token: Optional[str] = Field(
+        None, description="New Vantage integration token"
+    )
     base_url: Optional[str] = Field(None, description="New Vantage API base URL")
 
     @field_validator("api_key", "integration_token")

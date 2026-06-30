@@ -179,11 +179,17 @@ class PassthroughGuardrailHandler:
             HTTPException if a guardrail blocks the request
         """
         if not PassthroughGuardrailHandler.is_enabled(guardrails_config):
-            verbose_proxy_logger.debug("Passthrough guardrails not enabled, skipping guardrail execution")
+            verbose_proxy_logger.debug(
+                "Passthrough guardrails not enabled, skipping guardrail execution"
+            )
             return request_data
 
-        guardrail_names = PassthroughGuardrailHandler.get_guardrail_names(guardrails_config)
-        verbose_proxy_logger.debug("Executing passthrough guardrails: %s", guardrail_names)
+        guardrail_names = PassthroughGuardrailHandler.get_guardrail_names(
+            guardrails_config
+        )
+        verbose_proxy_logger.debug(
+            "Executing passthrough guardrails: %s", guardrail_names
+        )
 
         # Add to request metadata so guardrails know which to run
         from litellm.proxy.pass_through_endpoints.passthrough_context import (
@@ -194,7 +200,9 @@ class PassthroughGuardrailHandler:
             request_data["metadata"] = {}
 
         # Set guardrails in metadata using dict format for compatibility
-        request_data["metadata"]["guardrails"] = {name: True for name in guardrail_names}
+        request_data["metadata"]["guardrails"] = {
+            name: True for name in guardrail_names
+        }
 
         # Store passthrough guardrails config in request-scoped context
         set_passthrough_guardrails_config(guardrails_config)
@@ -232,14 +240,20 @@ class PassthroughGuardrailHandler:
         )
 
         # Normalize config to dict format (handles both list and dict)
-        normalized_config = PassthroughGuardrailHandler.normalize_config(passthrough_guardrails_config)
+        normalized_config = PassthroughGuardrailHandler.normalize_config(
+            passthrough_guardrails_config
+        )
 
         if normalized_config is None:
-            verbose_proxy_logger.debug("Passthrough guardrails not configured, skipping guardrail collection")
+            verbose_proxy_logger.debug(
+                "Passthrough guardrails not configured, skipping guardrail collection"
+            )
             return None
 
         if len(normalized_config) == 0:
-            verbose_proxy_logger.debug("Passthrough guardrails config is empty, skipping")
+            verbose_proxy_logger.debug(
+                "Passthrough guardrails config is empty, skipping"
+            )
             return None
 
         # Passthrough is enabled - collect guardrails
@@ -248,7 +262,9 @@ class PassthroughGuardrailHandler:
         # Add passthrough-specific guardrails
         for guardrail_name in normalized_config.keys():
             guardrails_to_run[guardrail_name] = True
-            verbose_proxy_logger.debug("Added passthrough-specific guardrail: %s", guardrail_name)
+            verbose_proxy_logger.debug(
+                "Added passthrough-specific guardrail: %s", guardrail_name
+            )
 
         # Add org/team/key level guardrails using shared helper
         temp_data: Dict[str, Any] = {"metadata": {}}
@@ -264,7 +280,9 @@ class PassthroughGuardrailHandler:
         for guardrail_name in inherited_guardrails:
             if guardrail_name not in guardrails_to_run:
                 guardrails_to_run[guardrail_name] = True
-                verbose_proxy_logger.debug("Added inherited guardrail (key/team level): %s", guardrail_name)
+                verbose_proxy_logger.debug(
+                    "Added inherited guardrail (key/team level): %s", guardrail_name
+                )
 
         verbose_proxy_logger.debug(
             "Collected guardrails for passthrough endpoint: %s",
@@ -301,7 +319,9 @@ class PassthroughGuardrailHandler:
         if passthrough_config is None:
             return None
 
-        settings = PassthroughGuardrailHandler.get_settings(passthrough_config, guardrail_name)
+        settings = PassthroughGuardrailHandler.get_settings(
+            passthrough_config, guardrail_name
+        )
         if settings is None:
             return None
 

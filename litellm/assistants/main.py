@@ -81,8 +81,12 @@ def get_assistants(
 ) -> SyncCursorPage[Assistant]:
     aget_assistants: Optional[bool] = kwargs.pop("aget_assistants", None)
     if aget_assistants is not None and not isinstance(aget_assistants, bool):
-        raise Exception("Invalid value passed in for aget_assistants. Only bool or None allowed")
-    optional_params = GenericLiteLLMParams(api_key=api_key, api_base=api_base, api_version=api_version, **kwargs)
+        raise Exception(
+            "Invalid value passed in for aget_assistants. Only bool or None allowed"
+        )
+    optional_params = GenericLiteLLMParams(
+        api_key=api_key, api_base=api_base, api_version=api_version, **kwargs
+    )
     litellm_params_dict = get_litellm_params(**kwargs)
 
     ### TIMEOUT LOGIC ###
@@ -134,9 +138,15 @@ def get_assistants(
             aget_assistants=aget_assistants,  # type: ignore
         )  # type: ignore
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
-        api_version = optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")  # type: ignore
+        api_version = (
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
+        )  # type: ignore
 
         api_key = (
             optional_params.api_key
@@ -252,10 +262,18 @@ def create_assistants(
     api_version: Optional[str] = None,
     **kwargs,
 ) -> Union[Assistant, Coroutine[Any, Any, Assistant]]:
-    async_create_assistants: Optional[bool] = kwargs.pop("async_create_assistants", None)
-    if async_create_assistants is not None and not isinstance(async_create_assistants, bool):
-        raise ValueError("Invalid value passed in for async_create_assistants. Only bool or None allowed")
-    optional_params = GenericLiteLLMParams(api_key=api_key, api_base=api_base, api_version=api_version, **kwargs)
+    async_create_assistants: Optional[bool] = kwargs.pop(
+        "async_create_assistants", None
+    )
+    if async_create_assistants is not None and not isinstance(
+        async_create_assistants, bool
+    ):
+        raise ValueError(
+            "Invalid value passed in for async_create_assistants. Only bool or None allowed"
+        )
+    optional_params = GenericLiteLLMParams(
+        api_key=api_key, api_base=api_base, api_version=api_version, **kwargs
+    )
     litellm_params_dict = get_litellm_params(**kwargs)
 
     ### TIMEOUT LOGIC ###
@@ -288,7 +306,9 @@ def create_assistants(
     }
 
     # only send params that are not None
-    create_assistant_data = {k: v for k, v in create_assistant_data.items() if v is not None}
+    create_assistant_data = {
+        k: v for k, v in create_assistant_data.items() if v is not None
+    }
 
     response: Optional[Union[Coroutine[Any, Any, Assistant], Assistant]] = None
     if custom_llm_provider == "openai":
@@ -324,9 +344,15 @@ def create_assistants(
             async_create_assistants=async_create_assistants,  # type: ignore
         )  # type: ignore
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
-        api_version = optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")  # type: ignore
+        api_version = (
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
+        )  # type: ignore
 
         api_key = (
             optional_params.api_key
@@ -427,13 +453,21 @@ def delete_assistant(
     api_version: Optional[str] = None,
     **kwargs,
 ) -> Union[AssistantDeleted, Coroutine[Any, Any, AssistantDeleted]]:
-    optional_params = GenericLiteLLMParams(api_key=api_key, api_base=api_base, api_version=api_version, **kwargs)
+    optional_params = GenericLiteLLMParams(
+        api_key=api_key, api_base=api_base, api_version=api_version, **kwargs
+    )
 
     litellm_params_dict = get_litellm_params(**kwargs)
 
-    async_delete_assistants: Optional[bool] = kwargs.pop("async_delete_assistants", None)
-    if async_delete_assistants is not None and not isinstance(async_delete_assistants, bool):
-        raise ValueError("Invalid value passed in for async_delete_assistants. Only bool or None allowed")
+    async_delete_assistants: Optional[bool] = kwargs.pop(
+        "async_delete_assistants", None
+    )
+    if async_delete_assistants is not None and not isinstance(
+        async_delete_assistants, bool
+    ):
+        raise ValueError(
+            "Invalid value passed in for async_delete_assistants. Only bool or None allowed"
+        )
 
     ### TIMEOUT LOGIC ###
     timeout = optional_params.timeout or kwargs.get("request_timeout", 600) or 600
@@ -451,7 +485,9 @@ def delete_assistant(
     elif timeout is None:
         timeout = 600.0
 
-    response: Optional[Union[AssistantDeleted, Coroutine[Any, Any, AssistantDeleted]]] = None
+    response: Optional[
+        Union[AssistantDeleted, Coroutine[Any, Any, AssistantDeleted]]
+    ] = None
     if custom_llm_provider == "openai":
         api_base = (
             optional_params.api_base
@@ -461,10 +497,18 @@ def delete_assistant(
             or "https://api.openai.com/v1"
         )
         organization = (
-            optional_params.organization or litellm.organization or os.getenv("OPENAI_ORGANIZATION", None) or None
+            optional_params.organization
+            or litellm.organization
+            or os.getenv("OPENAI_ORGANIZATION", None)
+            or None
         )
         # set API KEY
-        api_key = optional_params.api_key or litellm.api_key or litellm.openai_key or os.getenv("OPENAI_API_KEY")
+        api_key = (
+            optional_params.api_key
+            or litellm.api_key
+            or litellm.openai_key
+            or os.getenv("OPENAI_API_KEY")
+        )
 
         response = openai_assistants_api.delete_assistant(
             api_base=api_base,
@@ -477,9 +521,15 @@ def delete_assistant(
             async_delete_assistants=async_delete_assistants,
         )
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
-        api_version = optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")  # type: ignore
+        api_version = (
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
+        )  # type: ignore
 
         api_key = (
             optional_params.api_key
@@ -521,7 +571,9 @@ def delete_assistant(
             response=httpx.Response(
                 status_code=400,
                 content="Unsupported provider",
-                request=httpx.Request(method="delete_assistant", url="https://github.com/BerriAI/litellm"),
+                request=httpx.Request(
+                    method="delete_assistant", url="https://github.com/BerriAI/litellm"
+                ),
             ),
         )
     if response is None:
@@ -536,7 +588,9 @@ def delete_assistant(
 ### THREADS ###
 
 
-async def acreate_thread(custom_llm_provider: Literal["openai", "azure"], **kwargs) -> Thread:
+async def acreate_thread(
+    custom_llm_provider: Literal["openai", "azure"], **kwargs
+) -> Thread:
     loop = asyncio.get_event_loop()
     ### PASS ARGS TO GET ASSISTANTS ###
     kwargs["acreate_thread"] = True
@@ -656,7 +710,9 @@ def create_thread(
             acreate_thread=acreate_thread,
         )
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
         api_key = (
             optional_params.api_key
@@ -667,7 +723,9 @@ def create_thread(
         )  # type: ignore
 
         api_version: Optional[str] = (
-            optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
         )  # type: ignore
 
         extra_body = optional_params.get("extra_body", {})
@@ -808,10 +866,14 @@ def get_thread(
             aget_thread=aget_thread,
         )
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
         api_version: Optional[str] = (
-            optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
         )  # type: ignore
 
         api_key = (
@@ -928,7 +990,9 @@ def add_message(
 ) -> OpenAIMessage:
     ### COMMON OBJECTS ###
     a_add_message = kwargs.pop("a_add_message", None)
-    _message_data = MessageData(role=role, content=content, attachments=attachments, metadata=metadata)
+    _message_data = MessageData(
+        role=role, content=content, attachments=attachments, metadata=metadata
+    )
     litellm_params_dict = get_litellm_params(**kwargs)
     optional_params = GenericLiteLLMParams(**kwargs)
 
@@ -991,10 +1055,14 @@ def add_message(
             a_add_message=a_add_message,
         )
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
         api_version: Optional[str] = (
-            optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
         )  # type: ignore
 
         api_key = (
@@ -1148,10 +1216,14 @@ def get_messages(
             aget_messages=aget_messages,
         )
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
         api_version: Optional[str] = (
-            optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
         )  # type: ignore
 
         api_key = (
@@ -1352,9 +1424,15 @@ def run_thread(
             event_handler=event_handler,
         )
     elif custom_llm_provider == "azure":
-        api_base = optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")  # type: ignore
+        api_base = (
+            optional_params.api_base or litellm.api_base or get_secret("AZURE_API_BASE")
+        )  # type: ignore
 
-        api_version = optional_params.api_version or litellm.api_version or get_secret("AZURE_API_VERSION")  # type: ignore
+        api_version = (
+            optional_params.api_version
+            or litellm.api_version
+            or get_secret("AZURE_API_VERSION")
+        )  # type: ignore
 
         api_key = (
             optional_params.api_key

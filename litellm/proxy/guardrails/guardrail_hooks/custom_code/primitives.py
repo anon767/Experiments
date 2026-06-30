@@ -31,7 +31,9 @@ def allow() -> Dict[str, Any]:
     return {"action": "allow"}
 
 
-def block(reason: str, detection_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def block(
+    reason: str, detection_info: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Block the request/response with a reason.
 
@@ -226,7 +228,9 @@ def json_schema_valid(obj: Any, schema: Dict[str, Any]) -> bool:
         return False
 
 
-def _basic_json_schema_validate(obj: Any, schema: Dict[str, Any], max_depth: int = 50) -> bool:
+def _basic_json_schema_validate(
+    obj: Any, schema: Dict[str, Any], max_depth: int = 50
+) -> bool:
     """
     Basic JSON schema validation without external library.
     Handles: type, required, properties
@@ -283,7 +287,9 @@ def _basic_json_schema_validate(obj: Any, schema: Dict[str, Any], max_depth: int
 
 
 # Common URL pattern for extraction
-_URL_PATTERN = re.compile(r"https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[^\s]*", re.IGNORECASE)
+_URL_PATTERN = re.compile(
+    r"https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[^\s]*", re.IGNORECASE
+)
 
 
 def extract_urls(text: str) -> List[str]:
@@ -454,7 +460,9 @@ async def http_request(
     method = method.upper()
     allowed_methods = {"GET", "POST", "PUT", "DELETE", "PATCH"}
     if method not in allowed_methods:
-        return _http_error_response(f"Invalid HTTP method: {method}. Allowed: {', '.join(allowed_methods)}")
+        return _http_error_response(
+            f"Invalid HTTP method: {method}. Allowed: {', '.join(allowed_methods)}"
+        )
 
     # Apply timeout limits
     if timeout is None:
@@ -469,7 +477,9 @@ async def http_request(
     )
 
     try:
-        response = await _execute_http_request(client, method, url, headers, body, timeout)
+        response = await _execute_http_request(
+            client, method, url, headers, body, timeout
+        )
         return _http_success_response(response)
 
     except httpx.TimeoutException as e:
@@ -500,13 +510,21 @@ async def _execute_http_request(
     if method == "GET":
         return await client.get(url=url, headers=headers)
     elif method == "POST":
-        return await client.post(url=url, headers=headers, json=json_body, data=data_body, timeout=timeout)
+        return await client.post(
+            url=url, headers=headers, json=json_body, data=data_body, timeout=timeout
+        )
     elif method == "PUT":
-        return await client.put(url=url, headers=headers, json=json_body, data=data_body, timeout=timeout)
+        return await client.put(
+            url=url, headers=headers, json=json_body, data=data_body, timeout=timeout
+        )
     elif method == "DELETE":
-        return await client.delete(url=url, headers=headers, json=json_body, data=data_body, timeout=timeout)
+        return await client.delete(
+            url=url, headers=headers, json=json_body, data=data_body, timeout=timeout
+        )
     elif method == "PATCH":
-        return await client.patch(url=url, headers=headers, json=json_body, data=data_body, timeout=timeout)
+        return await client.patch(
+            url=url, headers=headers, json=json_body, data=data_body, timeout=timeout
+        )
     else:
         raise ValueError(f"Unsupported HTTP method: {method}")
 
@@ -552,7 +570,9 @@ async def http_post(
     Returns:
         Same as http_request
     """
-    return await http_request(url=url, method="POST", headers=headers, body=body, timeout=timeout)
+    return await http_request(
+        url=url, method="POST", headers=headers, body=body, timeout=timeout
+    )
 
 
 # =============================================================================

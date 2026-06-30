@@ -19,7 +19,6 @@ import litellm
 from litellm._logging import verbose_proxy_logger
 from litellm.integrations.custom_logger import CustomLogger
 from litellm.proxy._types import UserAPIKeyAuth
-from litellm.proxy.guardrails._content_utils import iter_message_text
 from litellm.types.utils import CallTypesLiteral
 
 
@@ -38,8 +37,11 @@ class _ENTERPRISE_OpenAI_Moderation(CustomLogger):
         user_api_key_dict: UserAPIKeyAuth,
         call_type: CallTypesLiteral,
     ):
-        # Covers multimodal list content + Responses-API input.
-        text = "".join(iter_message_text(data))
+        text = ""
+        if "messages" in data and isinstance(data["messages"], list):
+            for m in data["messages"]:  # assume messages is a list
+                if "content" in m and isinstance(m["content"], str):
+                    text += m["content"]
 
         from litellm.proxy.proxy_server import llm_router
 

@@ -8,9 +8,6 @@ path used for OpenAI and Azure models.
 import json
 from typing import Any, Dict, List, Optional, Union, cast
 
-from litellm.litellm_core_utils.reasoning_effort_utils import (
-    reasoning_effort_from_thinking_budget,
-)
 from litellm.llms.anthropic.experimental_pass_through.utils import (
     is_reasoning_auto_summary_enabled,
 )
@@ -54,7 +51,7 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
             return source.get("url")
         return None
 
-    def translate_messages_to_responses_input(
+    def translate_messages_to_responses_input(  # noqa: PLR0915
         self,
         messages: List[
             Union[
@@ -95,11 +92,17 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
                             continue
                         btype = block.get("type")
                         if btype == "text":
-                            user_parts.append({"type": "input_text", "text": block.get("text", "")})
+                            user_parts.append(
+                                {"type": "input_text", "text": block.get("text", "")}
+                            )
                         elif btype == "image":
-                            url = self._translate_anthropic_image_source_to_url(cast(dict, block.get("source", {})))
+                            url = self._translate_anthropic_image_source_to_url(
+                                cast(dict, block.get("source", {}))
+                            )
                             if url:
-                                user_parts.append({"type": "input_image", "image_url": url})
+                                user_parts.append(
+                                    {"type": "input_image", "image_url": url}
+                                )
                         elif btype == "tool_result":
                             tool_use_id = block.get("tool_use_id", "")
                             inner = block.get("content")
@@ -109,7 +112,9 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
                                 output_text = inner
                             elif isinstance(inner, list):
                                 parts = [
-                                    c.get("text", "") for c in inner if isinstance(c, dict) and c.get("type") == "text"
+                                    c.get("text", "")
+                                    for c in inner
+                                    if isinstance(c, dict) and c.get("type") == "text"
                                 ]
                                 output_text = "\n".join(parts)
                             else:
@@ -147,7 +152,9 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
                             continue
                         btype = block.get("type")
                         if btype == "text":
-                            asst_parts.append({"type": "output_text", "text": block.get("text", "")})
+                            asst_parts.append(
+                                {"type": "output_text", "text": block.get("text", "")}
+                            )
                         elif btype == "tool_use":
                             # tool_use becomes a top-level function_call item
                             input_items.append(
@@ -161,7 +168,9 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
                         elif btype == "thinking":
                             thinking_text = block.get("thinking", "")
                             if thinking_text:
-                                asst_parts.append({"type": "output_text", "text": thinking_text})
+                                asst_parts.append(
+                                    {"type": "output_text", "text": thinking_text}
+                                )
                     if asst_parts:
                         input_items.append(
                             {
@@ -184,7 +193,9 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
             tool_type = tool_dict.get("type", "")
             tool_name = tool_dict.get("name", "")
             # web_search tool
-            if (isinstance(tool_type, str) and tool_type.startswith("web_search")) or tool_name == "web_search":
+            if (
+                isinstance(tool_type, str) and tool_type.startswith("web_search")
+            ) or tool_name == "web_search":
                 result.append({"type": "web_search_preview"})
                 continue
             func_tool: Dict[str, Any] = {"type": "function", "name": tool_name}
@@ -240,32 +251,25 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
 
     @staticmethod
     def translate_thinking_to_reasoning(
-        thinking: Dict[str, Any],
-        output_config: Optional[Dict[str, Any]] = None,
+        thinking: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
         Convert Anthropic thinking param to Responses API reasoning param.
 
-        ``thinking.budget_tokens`` is bucketed via the shared
-        ``reasoning_effort_from_thinking_budget`` thresholds. For adaptive
-        thinking, uses ``output_config.effort`` if available, otherwise defaults
-        to medium.
+        thinking.budget_tokens maps to reasoning effort:
+          >= 10000 -> high, >= 5000 -> medium, >= 2000 -> low, < 2000 -> minimal
         """
-        if not isinstance(thinking, dict):
+        if not isinstance(thinking, dict) or thinking.get("type") != "enabled":
             return None
-
-        thinking_type = thinking.get("type")
-
-        if thinking_type == "adaptive":
-            # Use output_config.effort if available
+        budget = thinking.get("budget_tokens", 0)
+        if budget >= 10000:
+            effort = "high"
+        elif budget >= 5000:
             effort = "medium"
-            if isinstance(output_config, dict) and output_config.get("effort"):
-                effort = output_config["effort"]
-        elif thinking_type == "enabled":
-            effort = reasoning_effort_from_thinking_budget(thinking.get("budget_tokens", 0))
+        elif budget >= 2000:
+            effort = "low"
         else:
-            return None
-
+            effort = "minimal"
         auto_summary = is_reasoning_auto_summary_enabled()
         result: Dict[str, Any] = {"effort": effort}
         summary = thinking.get("summary")
@@ -305,7 +309,11 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
             if isinstance(system, str):
                 responses_kwargs["instructions"] = system
             elif isinstance(system, list):
-                text_parts = [b.get("text", "") for b in system if isinstance(b, dict) and b.get("type") == "text"]
+                text_parts = [
+                    b.get("text", "")
+                    for b in system
+                    if isinstance(b, dict) and b.get("type") == "text"
+                ]
                 responses_kwargs["instructions"] = "\n".join(filter(None, text_parts))
 
         # max_tokens -> max_output_tokens
@@ -329,18 +337,16 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
         # tool_choice
         tool_choice = anthropic_request.get("tool_choice")
         if tool_choice:
-            responses_kwargs["tool_choice"] = self.translate_tool_choice_to_responses_api(
+            responses_kwargs[
+                "tool_choice"
+            ] = self.translate_tool_choice_to_responses_api(
                 cast(AnthropicMessagesToolChoice, tool_choice)
             )
 
         # thinking -> reasoning
         thinking = anthropic_request.get("thinking")
         if isinstance(thinking, dict):
-            output_config = anthropic_request.get("output_config")
-            reasoning = self.translate_thinking_to_reasoning(
-                thinking,
-                output_config=cast(Optional[Dict[str, Any]], output_config),
-            )
+            reasoning = self.translate_thinking_to_reasoning(thinking)
             if reasoning:
                 responses_kwargs["reasoning"] = reasoning
 
@@ -351,7 +357,10 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
         output_config = anthropic_request.get("output_config")
         if not isinstance(output_format, dict) and isinstance(output_config, dict):
             output_format = output_config.get("format")  # type: ignore[assignment]
-        if isinstance(output_format, dict) and output_format.get("type") == "json_schema":
+        if (
+            isinstance(output_format, dict)
+            and output_format.get("type") == "json_schema"
+        ):
             schema = output_format.get("schema")
             if schema:
                 responses_kwargs["text"] = {
@@ -366,7 +375,9 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
         # context_management: Anthropic dict -> OpenAI array
         context_management = anthropic_request.get("context_management")
         if isinstance(context_management, dict):
-            openai_cm = self.translate_context_management_to_responses_api(context_management)
+            openai_cm = self.translate_context_management_to_responses_api(
+                context_management
+            )
             if openai_cm is not None:
                 responses_kwargs["context_management"] = openai_cm
 
@@ -416,7 +427,9 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
                 for part in item.content:
                     if getattr(part, "type", None) == "output_text":
                         content.append(
-                            AnthropicResponseContentBlockText(type="text", text=getattr(part, "text", "")).model_dump()
+                            AnthropicResponseContentBlockText(
+                                type="text", text=getattr(part, "text", "")
+                            ).model_dump()
                         )
 
             elif isinstance(item, ResponseFunctionToolCall):
@@ -440,7 +453,9 @@ class LiteLLMAnthropicToResponsesAPIAdapter:
                     for part in item.get("content", []):
                         if isinstance(part, dict) and part.get("type") == "output_text":
                             content.append(
-                                AnthropicResponseContentBlockText(type="text", text=part.get("text", "")).model_dump()
+                                AnthropicResponseContentBlockText(
+                                    type="text", text=part.get("text", "")
+                                ).model_dump()
                             )
                 elif item_type == "function_call":
                     try:

@@ -20,7 +20,9 @@ class ResponseMetadata:
 
     def __init__(self, result: Any):
         self.result = result
-        self._hidden_params: Union[HiddenParams, dict] = getattr(result, "_hidden_params", {}) or {}
+        self._hidden_params: Union[HiddenParams, dict] = (
+            getattr(result, "_hidden_params", {}) or {}
+        )
 
     @property
     def supports_response_time(self) -> bool:
@@ -31,7 +33,9 @@ class ResponseMetadata:
             or isinstance(self.result, TranscriptionResponse)
         )
 
-    def set_hidden_params(self, logging_obj: LiteLLMLoggingObject, model: Optional[str], kwargs: dict) -> None:
+    def set_hidden_params(
+        self, logging_obj: LiteLLMLoggingObject, model: Optional[str], kwargs: dict
+    ) -> None:
         """Set hidden parameters on the response"""
 
         ## ADD OTHER HIDDEN PARAMS
@@ -45,8 +49,7 @@ class ResponseMetadata:
                 result=self.result, litellm_model_name=model, router_model_id=model_id
             ),
             "additional_headers": process_response_headers(
-                self._get_value_from_hidden_params("additional_headers") or {},
-                preserve_litellm_internal_headers=True,
+                self._get_value_from_hidden_params("additional_headers") or {}
             ),
             "litellm_model_name": model,
         }
@@ -123,7 +126,12 @@ class ResponseMetadata:
         if (
             logging_obj.caching_details is not None
             and logging_obj.caching_details.get("cache_hit") is True
-            and (cache_duration_ms := logging_obj.caching_details.get("cache_duration_ms")) is not None
+            and (
+                cache_duration_ms := logging_obj.caching_details.get(
+                    "cache_duration_ms"
+                )
+            )
+            is not None
         ):
             overhead_ms = total_response_time_ms - cache_duration_ms
             self._update_hidden_params(

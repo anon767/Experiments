@@ -19,7 +19,9 @@ class VoyageError(BaseLLMException):
     ):
         self.status_code = status_code
         self.message = message
-        self.request = httpx.Request(method="POST", url="https://api.voyageai.com/v1/embeddings")
+        self.request = httpx.Request(
+            method="POST", url="https://api.voyageai.com/v1/embeddings"
+        )
         self.response = httpx.Response(status_code=status_code, request=self.request)
         super().__init__(
             status_code=status_code,
@@ -122,7 +124,9 @@ class VoyageEmbeddingConfig(BaseEmbeddingConfig):
         try:
             raw_response_json = raw_response.json()
         except Exception:
-            raise VoyageError(message=raw_response.text, status_code=raw_response.status_code)
+            raise VoyageError(
+                message=raw_response.text, status_code=raw_response.status_code
+            )
 
         # model_response.usage
         model_response.model = raw_response_json.get("model")
@@ -139,4 +143,6 @@ class VoyageEmbeddingConfig(BaseEmbeddingConfig):
     def get_error_class(
         self, error_message: str, status_code: int, headers: Union[dict, httpx.Headers]
     ) -> BaseLLMException:
-        return VoyageError(message=error_message, status_code=status_code, headers=headers)
+        return VoyageError(
+            message=error_message, status_code=status_code, headers=headers
+        )

@@ -28,8 +28,6 @@ async def available_enterprise_users(
         premium_user_data,
         prisma_client,
     )
-    from litellm.repositories.team_repository import TeamRepository
-    from litellm.repositories.user_repository import UserRepository
 
     if prisma_client is None:
         raise HTTPException(
@@ -46,8 +44,9 @@ async def available_enterprise_users(
                 max_users=5,
             )
 
-    user_count = await UserRepository(prisma_client).count_billable_users()
-    team_count = await TeamRepository(prisma_client).count()
+    # Count number of rows in LiteLLM_UserTable
+    user_count = await prisma_client.db.litellm_usertable.count()
+    team_count = await prisma_client.db.litellm_teamtable.count()
 
     if (
         not premium_user_data

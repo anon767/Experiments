@@ -18,7 +18,7 @@ The Levo integration extends LiteLLM's OpenTelemetry support to automatically se
 ### 1. Install Dependencies
 
 ```bash
-uv add opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-exporter-otlp-proto-grpc
+pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-exporter-otlp-proto-grpc
 ```
 
 ### 2. Configure LiteLLM
@@ -114,7 +114,7 @@ The Levo callback is registered in:
 ## Documentation
 
 For detailed documentation, see:
-- [LiteLLM Levo Integration Docs](https://docs.litellm.ai/docs/observability/levo_integration)
+- [LiteLLM Levo Integration Docs](../../../../docs/my-website/docs/observability/levo_integration.md)
 - [Levo Documentation](https://docs.levo.ai)
 
 ## Support
@@ -122,3 +122,4 @@ For detailed documentation, see:
 For issues or questions:
 - LiteLLM Issues: https://github.com/BerriAI/litellm/issues
 - Levo Support: support@levo.ai
+

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Literal
 
-from litellm.proxy._types import CallInfo, Litellm_EntityType
+from litellm.proxy._types import CallInfo
 
 
 class BaseBudgetAlertType(ABC):
@@ -31,8 +31,6 @@ class SoftBudgetAlert(BaseBudgetAlertType):
         return "Soft Budget Crossed: "
 
     def get_id(self, user_info: CallInfo) -> str:
-        if user_info.event_group == Litellm_EntityType.TEAM:
-            return user_info.team_id or "default_id"
         return user_info.token or "default_id"
 
 

@@ -1,7 +1,6 @@
 """
 MiniMax Anthropic transformation config - extends AnthropicConfig for MiniMax's Anthropic-compatible API
 """
-
 from typing import Optional
 
 import litellm
@@ -28,9 +27,6 @@ class MinimaxMessagesConfig(AnthropicMessagesConfig):
     def custom_llm_provider(self) -> Optional[str]:
         return "minimax"
 
-    def should_strip_billing_metadata(self) -> bool:
-        return True
-
     @staticmethod
     def get_api_key(api_key: Optional[str] = None) -> Optional[str]:
         """
@@ -47,7 +43,11 @@ class MinimaxMessagesConfig(AnthropicMessagesConfig):
         Defaults to international endpoint: https://api.minimax.io/anthropic
         For China, set to: https://api.minimaxi.com/anthropic
         """
-        return api_base or get_secret_str("MINIMAX_API_BASE") or "https://api.minimax.io/anthropic/v1/messages"
+        return (
+            api_base
+            or get_secret_str("MINIMAX_API_BASE")
+            or "https://api.minimax.io/anthropic/v1/messages"
+        )
 
     def get_complete_url(
         self,

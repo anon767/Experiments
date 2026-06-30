@@ -16,7 +16,9 @@ class DiskCache(BaseCache):
         try:
             import diskcache as dc
         except ModuleNotFoundError as e:
-            raise ModuleNotFoundError("Please install litellm with `litellm[caching]` to use disk caching.") from e
+            raise ModuleNotFoundError(
+                "Please install litellm with `litellm[caching]` to use disk caching."
+            ) from e
 
         # if users don't provider one, use the default litellm cache
         if disk_cache_dir is None:

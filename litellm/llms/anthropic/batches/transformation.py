@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union, cas
 import httpx
 from httpx import Headers, Response
 
-from litellm.litellm_core_utils.url_utils import encode_url_path_segment
 from litellm.llms.base_llm.batches.transformation import BaseBatchesConfig
 from litellm.llms.base_llm.chat.transformation import BaseLLMException
 from litellm.types.llms.openai import AllMessageValues, CreateBatchRequest
@@ -43,9 +42,7 @@ class AnthropicBatchesConfig(BaseBatchesConfig):
         api_base: Optional[str] = None,
     ) -> dict:
         """Validate and prepare environment-specific headers and parameters."""
-        if api_base is None and isinstance(litellm_params, dict):
-            api_base = litellm_params.get("api_base")
-        auth_header = self.anthropic_model_info.get_auth_header(api_key, api_base)
+        auth_header = self.anthropic_model_info.get_auth_header(api_key)
         if auth_header is None:
             raise ValueError(
                 "Missing Anthropic API Key - A call is being made to anthropic but no key is set either in the environment variables or via params"
@@ -125,8 +122,7 @@ class AnthropicBatchesConfig(BaseBatchesConfig):
             Complete URL for Anthropic batch retrieval: {api_base}/v1/messages/batches/{batch_id}
         """
         api_base = api_base or self.anthropic_model_info.get_api_base(api_base)
-        encoded_batch_id = encode_url_path_segment(batch_id, field_name="batch_id")
-        return f"{api_base.rstrip('/')}/v1/messages/batches/{encoded_batch_id}"
+        return f"{api_base.rstrip('/')}/v1/messages/batches/{batch_id}"
 
     def transform_retrieve_batch_request(
         self,
@@ -233,8 +229,12 @@ class AnthropicBatchesConfig(BaseBatchesConfig):
             completed_at=ended_at if processing_status == "ended" else None,
             failed_at=None,
             expired_at=archived_at if archived_at else None,
-            cancelling_at=(cancel_initiated_at if processing_status == "canceling" else None),
-            cancelled_at=(ended_at if processing_status == "canceling" and ended_at else None),
+            cancelling_at=cancel_initiated_at
+            if processing_status == "canceling"
+            else None,
+            cancelled_at=ended_at
+            if processing_status == "canceling" and ended_at
+            else None,
             request_counts=request_counts,
             metadata={},
         )
@@ -251,7 +251,9 @@ class AnthropicBatchesConfig(BaseBatchesConfig):
         else:
             headers_obj = headers if isinstance(headers, Headers) else None
 
-        return AnthropicError(status_code=status_code, message=error_message, headers=headers_obj)
+        return AnthropicError(
+            status_code=status_code, message=error_message, headers=headers_obj
+        )
 
     def transform_response(
         self,
@@ -284,13 +286,17 @@ class AnthropicBatchesConfig(BaseBatchesConfig):
                     response_json = json.loads(line)
                     # Update model_response with the parsed JSON
                     completion_response = response_json["result"]["message"]
-                    transformed_response = self.anthropic_chat_config.transform_parsed_response(
-                        completion_response=completion_response,
-                        raw_response=raw_response,
-                        model_response=model_response,
+                    transformed_response = (
+                        self.anthropic_chat_config.transform_parsed_response(
+                            completion_response=completion_response,
+                            raw_response=raw_response,
+                            model_response=model_response,
+                        )
                     )
 
-                    transformed_response_usage = getattr(transformed_response, "usage", None)
+                    transformed_response_usage = getattr(
+                        transformed_response, "usage", None
+                    )
                     if transformed_response_usage:
                         all_usage.append(cast(Usage, transformed_response_usage))
                 except json.JSONDecodeError:

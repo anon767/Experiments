@@ -27,16 +27,24 @@ router = APIRouter()
 
 
 class RouterSettingsResponse(BaseModel):
-    fields: List[RouterSettingsField] = Field(description="List of all configurable router settings with metadata")
-    current_values: Dict[str, Any] = Field(description="Current values of router settings")
-    routing_strategy_descriptions: Dict[str, str] = Field(description="Descriptions for each routing strategy option")
+    fields: List[RouterSettingsField] = Field(
+        description="List of all configurable router settings with metadata"
+    )
+    current_values: Dict[str, Any] = Field(
+        description="Current values of router settings"
+    )
+    routing_strategy_descriptions: Dict[str, str] = Field(
+        description="Descriptions for each routing strategy option"
+    )
 
 
 class RouterFieldsResponse(BaseModel):
     fields: List[RouterSettingsField] = Field(
         description="List of all configurable router settings with metadata (without field values)"
     )
-    routing_strategy_descriptions: Dict[str, str] = Field(description="Descriptions for each routing strategy option")
+    routing_strategy_descriptions: Dict[str, str] = Field(
+        description="Descriptions for each routing strategy option"
+    )
 
 
 def _get_routing_strategies_from_router_class() -> List[str]:
@@ -82,7 +90,9 @@ async def get_router_settings(
         available_routing_strategies = _get_routing_strategies_from_router_class()
 
         # Get router settings fields from types file
-        router_fields = [field.model_copy(deep=True) for field in ROUTER_SETTINGS_FIELDS]
+        router_fields = [
+            field.model_copy(deep=True) for field in ROUTER_SETTINGS_FIELDS
+        ]
 
         # Populate routing_strategy field with available options and descriptions
         for field in router_fields:
@@ -94,14 +104,11 @@ async def get_router_settings(
         config = await proxy_config.get_config()
         router_settings_from_config = config.get("router_settings", {})
 
-        current_values: Dict[str, Any] = {}
+        # Get current values from llm_router if initialized
+        current_values = {}
         if llm_router is not None:
-            # Router exposes routing groups as private `_routing_groups`; the
-            # generic `hasattr` loop below would miss them.
-            current_values["routing_groups"] = [group.model_dump() for group in llm_router._routing_groups.values()]
+            # Check all field names from the fields list
             for field in router_fields:
-                if field.field_name == "routing_groups":
-                    continue
                 if hasattr(llm_router, field.field_name):
                     value = getattr(llm_router, field.field_name)
                     current_values[field.field_name] = value
@@ -151,7 +158,9 @@ async def get_router_fields(
         available_routing_strategies = _get_routing_strategies_from_router_class()
 
         # Get router settings fields from types file
-        router_fields = [field.model_copy(deep=True) for field in ROUTER_SETTINGS_FIELDS]
+        router_fields = [
+            field.model_copy(deep=True) for field in ROUTER_SETTINGS_FIELDS
+        ]
 
         # Populate routing_strategy field with available options
         for field in router_fields:

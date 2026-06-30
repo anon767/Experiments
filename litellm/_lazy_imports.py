@@ -14,7 +14,6 @@ How it works:
 This makes importing litellm much faster because we don't load heavy dependencies
 until they're actually needed.
 """
-
 import importlib
 import sys
 from typing import Any, Optional, cast, Callable
@@ -205,7 +204,9 @@ def _get_lazy_import_registry() -> dict[str, Callable[[str], Any]]:
     return _LAZY_IMPORT_REGISTRY
 
 
-def _generic_lazy_import(name: str, import_map: dict[str, tuple[str, str]], category: str) -> Any:
+def _generic_lazy_import(
+    name: str, import_map: dict[str, tuple[str, str]], category: str
+) -> Any:
     """
     Generic function that handles lazy importing for most attributes.
 
@@ -323,7 +324,9 @@ def _lazy_import_litellm_logging(name: str) -> Any:
 
 def _lazy_import_llm_provider_logic(name: str) -> Any:
     """Handler for LLM provider logic functions (get_llm_provider, etc.)"""
-    return _generic_lazy_import(name, _LLM_PROVIDER_LOGIC_IMPORT_MAP, "LLM provider logic")
+    return _generic_lazy_import(
+        name, _LLM_PROVIDER_LOGIC_IMPORT_MAP, "LLM provider logic"
+    )
 
 
 def _lazy_import_utils_module(name: str) -> Any:

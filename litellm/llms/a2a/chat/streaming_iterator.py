@@ -1,7 +1,6 @@
 """
 A2A Streaming Response Iterator
 """
-
 from typing import Optional, Union
 
 from litellm.llms.base_llm.base_model_iterator import BaseModelResponseIterator
@@ -31,7 +30,9 @@ class A2AModelResponseIterator(BaseModelResponseIterator):
         )
         self.model = model
 
-    def chunk_parser(self, chunk: dict) -> Union[GenericStreamingChunk, ModelResponseStream]:
+    def chunk_parser(
+        self, chunk: dict
+    ) -> Union[GenericStreamingChunk, ModelResponseStream]:
         """
         Parse A2A streaming chunk to OpenAI format.
 

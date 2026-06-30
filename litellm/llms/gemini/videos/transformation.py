@@ -54,16 +54,6 @@ def _convert_image_to_gemini_format(image_file) -> Dict[str, str]:
     return {"bytesBase64Encoded": base64_encoded, "mimeType": mime_type}
 
 
-def _usage_video_resolution_from_parameters(
-    parameters: Dict[str, Any],
-) -> Optional[str]:
-    """Normalize Veo ``parameters.resolution`` for usage and cost tracking."""
-    res = parameters.get("resolution")
-    if res is None or res == "":
-        return None
-    return str(res).strip().lower()
-
-
 class GeminiVideoConfig(BaseVideoConfig):
     """
     Configuration class for Gemini (Veo) video generation.
@@ -74,13 +64,6 @@ class GeminiVideoConfig(BaseVideoConfig):
     3. Extract video URI from response
     4. Download video using file API
     """
-
-    _OPENAI_VIDEO_SIZE_TO_ASPECT_RATIO: Dict[str, str] = {
-        "1280x720": "16:9",
-        "1920x1080": "16:9",
-        "720x1280": "9:16",
-        "1080x1920": "9:16",
-    }
 
     def __init__(self):
         super().__init__()
@@ -105,8 +88,6 @@ class GeminiVideoConfig(BaseVideoConfig):
         - prompt → prompt
         - input_reference → image
         - size → aspectRatio (e.g., "1280x720" → "16:9")
-        - size → resolution when inferable ("1280x720"/"720x1280" → "720p",
-          "1920x1080"/"1080x1920" → "1080p"); skipped if ``resolution`` is already set
         - seconds → durationSeconds (defaults to 4 seconds if not provided)
 
         All other params are passed through as-is to support Gemini-specific parameters.
@@ -115,7 +96,11 @@ class GeminiVideoConfig(BaseVideoConfig):
 
         # Get supported OpenAI params (exclude "model" and "prompt" which are handled separately)
         supported_openai_params = self.get_supported_openai_params(model)
-        openai_params_to_map = {param for param in supported_openai_params if param not in {"model", "prompt"}}
+        openai_params_to_map = {
+            param
+            for param in supported_openai_params
+            if param not in {"model", "prompt"}
+        }
 
         # Map input_reference to image
         if "input_reference" in video_create_optional_params:
@@ -128,10 +113,6 @@ class GeminiVideoConfig(BaseVideoConfig):
                 aspect_ratio = self._convert_size_to_aspect_ratio(size)
                 if aspect_ratio:
                     mapped_params["aspectRatio"] = aspect_ratio
-                if not video_create_optional_params.get("resolution"):
-                    inferred_resolution = self._convert_size_to_resolution(size)
-                    if inferred_resolution is not None:
-                        mapped_params["resolution"] = inferred_resolution
 
         # Map seconds to durationSeconds, default to 4 seconds (matching OpenAI)
         if "seconds" in video_create_optional_params:
@@ -162,27 +143,14 @@ class GeminiVideoConfig(BaseVideoConfig):
         if not size:
             return None
 
-        return self._OPENAI_VIDEO_SIZE_TO_ASPECT_RATIO.get(size, "16:9")
+        aspect_ratio_map = {
+            "1280x720": "16:9",
+            "1920x1080": "16:9",
+            "720x1280": "9:16",
+            "1080x1920": "9:16",
+        }
 
-    def _convert_size_to_resolution(self, size: str) -> Optional[str]:
-        """
-        Map OpenAI ``size`` (WxH) to Veo ``resolution`` for presets in
-        ``_OPENAI_VIDEO_SIZE_TO_ASPECT_RATIO`` (720p / 1080p from the smaller edge).
-
-        Unknown sizes return None so the API default applies (no forced resolution).
-        """
-        if not size or size not in self._OPENAI_VIDEO_SIZE_TO_ASPECT_RATIO:
-            return None
-        try:
-            w_str, h_str = size.split("x", 1)
-            smaller = min(int(w_str), int(h_str))
-        except (ValueError, TypeError):
-            return None
-        if smaller == 720:
-            return "720p"
-        if smaller == 1080:
-            return "1080p"
-        return None
+        return aspect_ratio_map.get(size, "16:9")
 
     def validate_environment(
         self,
@@ -199,7 +167,12 @@ class GeminiVideoConfig(BaseVideoConfig):
         if litellm_params and litellm_params.api_key:
             api_key = api_key or litellm_params.api_key
 
-        api_key = api_key or litellm.api_key or get_secret_str("GOOGLE_API_KEY") or get_secret_str("GEMINI_API_KEY")
+        api_key = (
+            api_key
+            or litellm.api_key
+            or get_secret_str("GOOGLE_API_KEY")
+            or get_secret_str("GEMINI_API_KEY")
+        )
 
         if not api_key:
             raise ValueError(
@@ -227,7 +200,10 @@ class GeminiVideoConfig(BaseVideoConfig):
         For status/delete: returns base URL only
         """
         if api_base is None:
-            api_base = get_secret_str("GEMINI_API_BASE") or "https://generativelanguage.googleapis.com"
+            api_base = (
+                get_secret_str("GEMINI_API_BASE")
+                or "https://generativelanguage.googleapis.com"
+            )
 
         if not model or model == "":
             return api_base.rstrip("/")
@@ -253,11 +229,7 @@ class GeminiVideoConfig(BaseVideoConfig):
         {
             "instances": [
                 {
-                    "prompt": "A cat playing with a ball of yarn",
-                    "image": {
-                        "bytesBase64Encoded": "...",
-                        "mimeType": "image/jpeg"
-                    }
+                    "prompt": "A cat playing with a ball of yarn"
                 }
             ],
             "parameters": {
@@ -267,22 +239,19 @@ class GeminiVideoConfig(BaseVideoConfig):
             }
         }
         """
-        instance: GeminiVideoGenerationInstance = {"prompt": prompt}
+        instance = GeminiVideoGenerationInstance(prompt=prompt)
 
         params_copy = video_create_optional_request_params.copy()
 
-        if "image" in params_copy:
-            image = params_copy.pop("image")
-            if image is not None:
-                if isinstance(image, dict):
-                    image_data = image
-                else:
-                    image_data = _convert_image_to_gemini_format(image)
-                instance["image"] = image_data
+        if "image" in params_copy and params_copy["image"] is not None:
+            image_data = _convert_image_to_gemini_format(params_copy["image"])
+            params_copy["image"] = image_data
 
         parameters = GeminiVideoGenerationParameters(**params_copy)
 
-        request_body_obj = GeminiVideoGenerationRequest(instances=[instance], parameters=parameters)
+        request_body_obj = GeminiVideoGenerationRequest(
+            instances=[instance], parameters=parameters
+        )
 
         request_data = request_body_obj.model_dump(exclude_none=True)
 
@@ -310,7 +279,7 @@ class GeminiVideoConfig(BaseVideoConfig):
         We return this as a VideoObject with:
         - id: operation name (used for polling)
         - status: "processing"
-        - usage: includes duration_seconds and optional video_resolution for cost calculation
+        - usage: includes duration_seconds for cost calculation
         """
         response_data = raw_response.json()
 
@@ -325,7 +294,9 @@ class GeminiVideoConfig(BaseVideoConfig):
             raise ValueError(f"No operation name in Veo response: {response_data}")
 
         if custom_llm_provider:
-            video_id = encode_video_id_with_provider(operation_name, custom_llm_provider, model)
+            video_id = encode_video_id_with_provider(
+                operation_name, custom_llm_provider, model
+            )
         else:
             video_id = operation_name
 
@@ -336,18 +307,18 @@ class GeminiVideoConfig(BaseVideoConfig):
             model=model,
         )
 
-        usage_data: Dict[str, Any] = {}
+        usage_data = {}
         if request_data:
             parameters = request_data.get("parameters", {})
-            duration = parameters.get("durationSeconds") or DEFAULT_GOOGLE_VIDEO_DURATION_SECONDS
+            duration = (
+                parameters.get("durationSeconds")
+                or DEFAULT_GOOGLE_VIDEO_DURATION_SECONDS
+            )
             if duration is not None:
                 try:
                     usage_data["duration_seconds"] = float(duration)
                 except (ValueError, TypeError):
                     pass
-            video_resolution = _usage_video_resolution_from_parameters(parameters)
-            if video_resolution is not None:
-                usage_data["video_resolution"] = video_resolution
 
         video_obj.usage = usage_data
         return video_obj
@@ -411,7 +382,9 @@ class GeminiVideoConfig(BaseVideoConfig):
         is_done = operation_response.done
 
         if custom_llm_provider:
-            video_id = encode_video_id_with_provider(operation_name, custom_llm_provider, None)
+            video_id = encode_video_id_with_provider(
+                operation_name, custom_llm_provider, None
+            )
         else:
             video_id = operation_name
 
@@ -449,13 +422,16 @@ class GeminiVideoConfig(BaseVideoConfig):
 
         if not operation_response.done:
             raise ValueError(
-                "Video generation is not complete yet. Please check status with video_status() before downloading."
+                "Video generation is not complete yet. "
+                "Please check status with video_status() before downloading."
             )
 
         if not operation_response.response:
             raise ValueError("No response data in completed operation")
 
-        generated_samples = operation_response.response.generateVideoResponse.generatedSamples
+        generated_samples = (
+            operation_response.response.generateVideoResponse.generatedSamples
+        )
         download_url = generated_samples[0].video.uri
 
         params: Dict[str, Any] = {}
@@ -486,7 +462,8 @@ class GeminiVideoConfig(BaseVideoConfig):
         Video remix is not supported by Veo API.
         """
         raise NotImplementedError(
-            "Video remix is not supported by Google Veo. Please use video_generation() to create new videos."
+            "Video remix is not supported by Google Veo. "
+            "Please use video_generation() to create new videos."
         )
 
     def transform_video_remix_response(
@@ -536,7 +513,8 @@ class GeminiVideoConfig(BaseVideoConfig):
         Video delete is not supported by Veo API.
         """
         raise NotImplementedError(
-            "Video delete is not supported by Google Veo. Videos are automatically cleaned up by Google."
+            "Video delete is not supported by Google Veo. "
+            "Videos are automatically cleaned up by Google."
         )
 
     def transform_video_delete_response(
@@ -547,36 +525,29 @@ class GeminiVideoConfig(BaseVideoConfig):
         """Video delete is not supported."""
         raise NotImplementedError("Video delete is not supported by Google Veo.")
 
-    def transform_video_create_character_request(self, name, video, api_base, litellm_params, headers):
+    def transform_video_create_character_request(
+        self, name, video, api_base, litellm_params, headers
+    ):
         raise NotImplementedError("video create character is not supported for Gemini")
 
     def transform_video_create_character_response(self, raw_response, logging_obj):
         raise NotImplementedError("video create character is not supported for Gemini")
 
-    def transform_video_get_character_request(self, character_id, api_base, litellm_params, headers):
+    def transform_video_get_character_request(
+        self, character_id, api_base, litellm_params, headers
+    ):
         raise NotImplementedError("video get character is not supported for Gemini")
 
     def transform_video_get_character_response(self, raw_response, logging_obj):
         raise NotImplementedError("video get character is not supported for Gemini")
 
     def transform_video_edit_request(
-        self,
-        prompt,
-        video_id,
-        api_base,
-        litellm_params,
-        headers,
-        extra_body=None,
-        prefetched_source_data=None,
+        self, prompt, video_id, api_base, litellm_params, headers, extra_body=None
     ):
         raise NotImplementedError("video edit is not supported for Gemini")
 
     def transform_video_edit_response(
-        self,
-        raw_response,
-        logging_obj,
-        custom_llm_provider=None,
-        request_data=None,
+        self, raw_response, logging_obj, custom_llm_provider=None
     ):
         raise NotImplementedError("video edit is not supported for Gemini")
 
@@ -592,7 +563,9 @@ class GeminiVideoConfig(BaseVideoConfig):
     ):
         raise NotImplementedError("video extension is not supported for Gemini")
 
-    def transform_video_extension_response(self, raw_response, logging_obj, custom_llm_provider=None):
+    def transform_video_extension_response(
+        self, raw_response, logging_obj, custom_llm_provider=None
+    ):
         raise NotImplementedError("video extension is not supported for Gemini")
 
     def get_error_class(

@@ -2,7 +2,6 @@
 This is OpenAI compatible - no transformation is applied
 
 """
-
 from typing import List, Optional, Union
 
 import httpx
@@ -135,4 +134,6 @@ class SambaNovaEmbeddingConfig(BaseEmbeddingConfig):
     def get_error_class(
         self, error_message: str, status_code: int, headers: Union[dict, httpx.Headers]
     ) -> BaseLLMException:
-        return SambaNovaError(message=error_message, status_code=status_code, headers=headers)
+        return SambaNovaError(
+            message=error_message, status_code=status_code, headers=headers
+        )

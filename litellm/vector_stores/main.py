@@ -190,7 +190,9 @@ def create(
         litellm_params = GenericLiteLLMParams(**kwargs)
 
         ## MOCK RESPONSE LOGIC
-        if litellm_params.mock_response and isinstance(litellm_params.mock_response, dict):
+        if litellm_params.mock_response and isinstance(
+            litellm_params.mock_response, dict
+        ):
             return mock_vector_store_create_response(
                 mock_response=VectorStoreCreateResponse(**litellm_params.mock_response)
             )
@@ -210,19 +212,25 @@ def create(
             custom_llm_provider = custom_llm_provider
 
         # get provider config - using vector store custom logger for now
-        vector_store_provider_config = ProviderConfigManager.get_provider_vector_stores_config(
-            provider=litellm.LlmProviders(custom_llm_provider),
-            api_type=api_type,
+        vector_store_provider_config = (
+            ProviderConfigManager.get_provider_vector_stores_config(
+                provider=litellm.LlmProviders(custom_llm_provider),
+                api_type=api_type,
+            )
         )
 
         if vector_store_provider_config is None:
-            raise ValueError(f"Vector store create is not supported for {custom_llm_provider}")
+            raise ValueError(
+                f"Vector store create is not supported for {custom_llm_provider}"
+            )
 
         local_vars.update(kwargs)
 
         # Get VectorStoreCreateOptionalRequestParams with only valid parameters
         vector_store_create_optional_params: VectorStoreCreateOptionalRequestParams = (
-            VectorStoreRequestUtils.get_requested_vector_store_create_optional_param(local_vars)
+            VectorStoreRequestUtils.get_requested_vector_store_create_optional_param(
+                local_vars
+            )
         )
 
         # Pre Call logging
@@ -369,9 +377,17 @@ def search(
         _is_async = kwargs.pop("asearch", False) is True
 
         # pull credentials from registry if available
-        if litellm.vector_store_registry is not None and vector_store_id is not None:
+        vector_store_id_for_credentials = kwargs.get("vector_store_id", vector_store_id)
+        if (
+            litellm.vector_store_registry is not None
+            and vector_store_id_for_credentials is not None
+        ):
             try:
-                registry_credentials = litellm.vector_store_registry.get_credentials_for_vector_store(vector_store_id)
+                registry_credentials = (
+                    litellm.vector_store_registry.get_credentials_for_vector_store(
+                        vector_store_id_for_credentials
+                    )
+                )
                 kwargs.update(registry_credentials)
             except Exception:
                 pass
@@ -380,7 +396,9 @@ def search(
         litellm_params = GenericLiteLLMParams(vector_store_id=vector_store_id, **kwargs)
 
         ## MOCK RESPONSE LOGIC
-        if litellm_params.mock_response and isinstance(litellm_params.mock_response, (str, builtins.list)):
+        if litellm_params.mock_response and isinstance(
+            litellm_params.mock_response, (str, builtins.list)
+        ):
             mock_results = None
             if isinstance(litellm_params.mock_response, builtins.list):
                 mock_results = litellm_params.mock_response  # type: ignore[assignment]
@@ -401,13 +419,17 @@ def search(
             custom_llm_provider = custom_llm_provider
 
         # get provider config - using vector store custom logger for now
-        vector_store_provider_config = ProviderConfigManager.get_provider_vector_stores_config(
-            provider=litellm.LlmProviders(custom_llm_provider),
-            api_type=api_type,
+        vector_store_provider_config = (
+            ProviderConfigManager.get_provider_vector_stores_config(
+                provider=litellm.LlmProviders(custom_llm_provider),
+                api_type=api_type,
+            )
         )
 
         if vector_store_provider_config is None:
-            raise ValueError(f"Vector store search is not supported for {custom_llm_provider}")
+            raise ValueError(
+                f"Vector store search is not supported for {custom_llm_provider}"
+            )
 
         local_vars.update(kwargs)
 
@@ -554,13 +576,17 @@ def retrieve(
             api_type = None
             custom_llm_provider = custom_llm_provider
 
-        vector_store_provider_config = ProviderConfigManager.get_provider_vector_stores_config(
-            provider=litellm.LlmProviders(custom_llm_provider),
-            api_type=api_type,
+        vector_store_provider_config = (
+            ProviderConfigManager.get_provider_vector_stores_config(
+                provider=litellm.LlmProviders(custom_llm_provider),
+                api_type=api_type,
+            )
         )
 
         if vector_store_provider_config is None:
-            raise ValueError(f"Vector store retrieve is not supported for {custom_llm_provider}")
+            raise ValueError(
+                f"Vector store retrieve is not supported for {custom_llm_provider}"
+            )
 
         litellm_logging_obj.update_from_kwargs(
             kwargs=kwargs,
@@ -698,13 +724,17 @@ def list(
             api_type = None
             custom_llm_provider = custom_llm_provider
 
-        vector_store_provider_config = ProviderConfigManager.get_provider_vector_stores_config(
-            provider=litellm.LlmProviders(custom_llm_provider),
-            api_type=api_type,
+        vector_store_provider_config = (
+            ProviderConfigManager.get_provider_vector_stores_config(
+                provider=litellm.LlmProviders(custom_llm_provider),
+                api_type=api_type,
+            )
         )
 
         if vector_store_provider_config is None:
-            raise ValueError(f"Vector store list is not supported for {custom_llm_provider}")
+            raise ValueError(
+                f"Vector store list is not supported for {custom_llm_provider}"
+            )
 
         litellm_logging_obj.update_from_kwargs(
             kwargs=kwargs,
@@ -850,18 +880,24 @@ def update(
             api_type = None
             custom_llm_provider = custom_llm_provider
 
-        vector_store_provider_config = ProviderConfigManager.get_provider_vector_stores_config(
-            provider=litellm.LlmProviders(custom_llm_provider),
-            api_type=api_type,
+        vector_store_provider_config = (
+            ProviderConfigManager.get_provider_vector_stores_config(
+                provider=litellm.LlmProviders(custom_llm_provider),
+                api_type=api_type,
+            )
         )
 
         if vector_store_provider_config is None:
-            raise ValueError(f"Vector store update is not supported for {custom_llm_provider}")
+            raise ValueError(
+                f"Vector store update is not supported for {custom_llm_provider}"
+            )
 
         local_vars.update(kwargs)
 
         vector_store_update_optional_params: VectorStoreCreateOptionalRequestParams = (
-            VectorStoreRequestUtils.get_requested_vector_store_create_optional_param(local_vars)
+            VectorStoreRequestUtils.get_requested_vector_store_create_optional_param(
+                local_vars
+            )
         )
 
         litellm_logging_obj.update_from_kwargs(
@@ -993,13 +1029,17 @@ def delete(
             api_type = None
             custom_llm_provider = custom_llm_provider
 
-        vector_store_provider_config = ProviderConfigManager.get_provider_vector_stores_config(
-            provider=litellm.LlmProviders(custom_llm_provider),
-            api_type=api_type,
+        vector_store_provider_config = (
+            ProviderConfigManager.get_provider_vector_stores_config(
+                provider=litellm.LlmProviders(custom_llm_provider),
+                api_type=api_type,
+            )
         )
 
         if vector_store_provider_config is None:
-            raise ValueError(f"Vector store delete is not supported for {custom_llm_provider}")
+            raise ValueError(
+                f"Vector store delete is not supported for {custom_llm_provider}"
+            )
 
         litellm_logging_obj.update_from_kwargs(
             kwargs=kwargs,

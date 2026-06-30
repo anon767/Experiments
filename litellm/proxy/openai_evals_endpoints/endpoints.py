@@ -78,7 +78,11 @@ async def create_eval(
 
     # Extract model for routing (header > query > body)
     # When using extra_body={"model": "..."}, the OpenAI SDK merges it into the body
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -179,7 +183,11 @@ async def list_evals(
         data["order_by"] = order_by
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -267,7 +275,11 @@ async def get_eval(
     data["eval_id"] = eval_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -357,7 +369,11 @@ async def update_eval(
     data["eval_id"] = eval_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -445,7 +461,11 @@ async def delete_eval(
     data["eval_id"] = eval_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -533,7 +553,11 @@ async def cancel_eval(
     data["eval_id"] = eval_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -636,7 +660,11 @@ async def create_run(
         request.headers.get("x-litellm-model")
         or request.query_params.get("model")
         or data.get("model")
-        or (data.get("completion", {}).get("model") if isinstance(data.get("completion"), dict) else None)
+        or (
+            data.get("completion", {}).get("model")
+            if isinstance(data.get("completion"), dict)
+            else None
+        )
     )
     if model:
         data["model"] = model
@@ -906,7 +934,11 @@ async def cancel_run(
     data["run_id"] = run_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 
@@ -995,7 +1027,11 @@ async def delete_run(
     data["run_id"] = run_id
 
     # Extract model for routing (header > query > body)
-    model = data.get("model") or request.query_params.get("model") or request.headers.get("x-litellm-model")
+    model = (
+        data.get("model")
+        or request.query_params.get("model")
+        or request.headers.get("x-litellm-model")
+    )
     if model:
         data["model"] = model
 

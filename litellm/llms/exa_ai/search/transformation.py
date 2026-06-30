@@ -3,7 +3,6 @@ Calls Exa AI's /search endpoint to search the web.
 
 Exa AI API Reference: https://docs.exa.ai/reference/search
 """
-
 from typing import Dict, List, Optional, TypedDict, Union
 
 import httpx
@@ -40,7 +39,9 @@ class ExaAISearchRequest(_ExaAISearchRequestRequired, total=False):
     startPublishedDate: str  # Optional - published date filter (ISO 8601 format)
     endPublishedDate: str  # Optional - published date filter (ISO 8601 format)
     includeText: List[str]  # Optional - strings that must be present in webpage text
-    excludeText: List[str]  # Optional - strings that must not be present in webpage text
+    excludeText: List[
+        str
+    ]  # Optional - strings that must not be present in webpage text
     context: Union[bool, dict]  # Optional - format results for LLMs
     moderation: bool  # Optional - enable content moderation, default false
     contents: dict  # Optional - content retrieval options
@@ -63,15 +64,11 @@ class ExaAISearchConfig(BaseSearchConfig):
         """
         Validate environment and return headers.
         """
-        api_key = self.resolve_server_api_key(
-            caller_api_key=api_key,
-            caller_api_base=api_base,
-            key_env_vars=("EXA_API_KEY",),
-            base_env_var="EXA_API_BASE",
-            default_api_base=self.EXA_AI_API_BASE,
-        )
+        api_key = api_key or get_secret_str("EXA_API_KEY")
         if not api_key:
-            raise ValueError("EXA_API_KEY is not set. Set `EXA_API_KEY` environment variable.")
+            raise ValueError(
+                "EXA_API_KEY is not set. Set `EXA_API_KEY` environment variable."
+            )
         headers["x-api-key"] = api_key
         headers["Content-Type"] = "application/json"
         return headers
@@ -142,7 +139,10 @@ class ExaAISearchConfig(BaseSearchConfig):
 
         # pass through all other parameters as-is
         for param, value in optional_params.items():
-            if param not in self.get_supported_perplexity_optional_params() and param not in result_data:
+            if (
+                param not in self.get_supported_perplexity_optional_params()
+                and param not in result_data
+            ):
                 result_data[param] = value
 
         # By default, request text content if not explicitly specified

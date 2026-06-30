@@ -1,7 +1,6 @@
 """
 AgentOps integration for LiteLLM - Provides OpenTelemetry tracing for LLM calls
 """
-
 import os
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
@@ -65,7 +64,9 @@ class AgentOps(OpenTelemetry):
 
         headers = f"Authorization=Bearer {jwt_token}" if jwt_token else None
 
-        otel_config = OpenTelemetryConfig(exporter="otlp_http", endpoint=config.endpoint, headers=headers)
+        otel_config = OpenTelemetryConfig(
+            exporter="otlp_http", endpoint=config.endpoint, headers=headers
+        )
 
         # Initialize OpenTelemetry with our config
         super().__init__(config=otel_config, callback_name="agentops")

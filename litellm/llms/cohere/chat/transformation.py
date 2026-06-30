@@ -232,7 +232,9 @@ class CohereChatConfig(BaseConfig):
             raw_response_json = raw_response.json()
             model_response.choices[0].message.content = raw_response_json["text"]  # type: ignore
         except Exception:
-            raise CohereError(message=raw_response.text, status_code=raw_response.status_code)
+            raise CohereError(
+                message=raw_response.text, status_code=raw_response.status_code
+            )
 
         ## ADD CITATIONS
         if "citations" in raw_response_json:
@@ -336,8 +338,14 @@ class CohereChatConfig(BaseConfig):
             "parameter_definitions": {},
         }
 
-        for param_name, param_def in openai_tool["function"]["parameters"]["properties"].items():
-            required_params = openai_tool.get("function", {}).get("parameters", {}).get("required", [])
+        for param_name, param_def in openai_tool["function"]["parameters"][
+            "properties"
+        ].items():
+            required_params = (
+                openai_tool.get("function", {})
+                .get("parameters", {})
+                .get("required", [])
+            )
             cohere_param_def = {
                 "description": param_def.get("description", ""),
                 "type": param_def.get("type", ""),

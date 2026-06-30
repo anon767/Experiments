@@ -20,7 +20,9 @@ def get_file_contents_from_s3(bucket_name, object_key):
             aws_secret_access_key=credentials.secret_key,
             aws_session_token=credentials.token,  # Optional, if using temporary credentials
         )
-        verbose_proxy_logger.debug(f"Retrieving {object_key} from S3 bucket: {bucket_name}")
+        verbose_proxy_logger.debug(
+            f"Retrieving {object_key} from S3 bucket: {bucket_name}"
+        )
         response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
         verbose_proxy_logger.debug(f"Response: {response}")
 
@@ -94,7 +96,9 @@ def download_python_file_from_s3(
             aws_session_token=credentials.token,
         )
 
-        verbose_proxy_logger.debug(f"Downloading Python file {object_key} from S3 bucket: {bucket_name}")
+        verbose_proxy_logger.debug(
+            f"Downloading Python file {object_key} from S3 bucket: {bucket_name}"
+        )
         response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
 
         # Read the file contents
@@ -108,7 +112,9 @@ def download_python_file_from_s3(
         with open(local_file_path, "w") as f:
             f.write(file_contents)
 
-        verbose_proxy_logger.debug(f"Python file downloaded successfully to {local_file_path}")
+        verbose_proxy_logger.debug(
+            f"Python file downloaded successfully to {local_file_path}"
+        )
         return True
 
     except ImportError as e:
@@ -155,11 +161,15 @@ async def download_python_file_from_gcs(
         with open(local_file_path, "w") as f:
             f.write(file_contents)
 
-        verbose_proxy_logger.debug(f"Python file downloaded successfully to {local_file_path}")
+        verbose_proxy_logger.debug(
+            f"Python file downloaded successfully to {local_file_path}"
+        )
         return True
 
     except Exception as e:
-        verbose_proxy_logger.exception(f"Error downloading Python file from GCS: {str(e)}")
+        verbose_proxy_logger.exception(
+            f"Error downloading Python file from GCS: {str(e)}"
+        )
         return False
 
 

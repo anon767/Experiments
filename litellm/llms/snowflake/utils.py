@@ -1,4 +1,3 @@
-import re
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from litellm.secret_managers.main import get_secret_str
@@ -25,7 +24,6 @@ class SnowflakeBaseConfig:
             "temperature",
             "max_tokens",
             "top_p",
-            "stream",
             "response_format",
             "tools",
             "tool_choice",
@@ -63,8 +61,6 @@ class SnowflakeBaseConfig:
                 account_id = get_secret_str("SNOWFLAKE_ACCOUNT_ID")
             if account_id is None:
                 raise ValueError("Missing snowflake account_id")
-            if not re.match(r"^[a-zA-Z0-9_-]+$", account_id):
-                raise ValueError("Invalid account_id format")
             api_base = f"https://{account_id}.snowflakecomputing.com/api/v2"
 
         api_base = api_base.rstrip("/")

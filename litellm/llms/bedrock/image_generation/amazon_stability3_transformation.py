@@ -67,7 +67,9 @@ class AmazonStability3Config:
         return False
 
     @classmethod
-    def transform_request_body(cls, text: str, optional_params: dict) -> AmazonStability3TextToImageRequest:
+    def transform_request_body(
+        cls, text: str, optional_params: dict
+    ) -> AmazonStability3TextToImageRequest:
         """
         Transform the request body for the Stability 3 models
         """

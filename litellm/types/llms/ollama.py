@@ -37,4 +37,3 @@ class OllamaChatCompletionMessage(TypedDict, total=False):
     images: List[str]
     tool_calls: List[OllamaToolCall]
     tool_name: str
-    tool_call_id: str

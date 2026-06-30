@@ -29,7 +29,9 @@ class SpeechToCompletionBridgeTransformationHandler:
             if isinstance(voice, str):
                 passed_optional_params["audio"] = {"voice": voice}
                 if "response_format" in optional_params:
-                    passed_optional_params["audio"]["format"] = optional_params["response_format"]
+                    passed_optional_params["audio"]["format"] = optional_params[
+                        "response_format"
+                    ]
 
         return_kwargs = {
             "model": model,
@@ -51,7 +53,9 @@ class SpeechToCompletionBridgeTransformationHandler:
         return_kwargs = {k: v for k, v in return_kwargs.items() if v is not None}
         return return_kwargs
 
-    def _convert_pcm16_to_wav(self, pcm_data: bytes, sample_rate: int = 24000, channels: int = 1) -> bytes:
+    def _convert_pcm16_to_wav(
+        self, pcm_data: bytes, sample_rate: int = 24000, channels: int = 1
+    ) -> bytes:
         """
         Convert raw PCM16 data to WAV format.
 
@@ -93,9 +97,13 @@ class SpeechToCompletionBridgeTransformationHandler:
 
     def _is_gemini_tts_model(self, model: str) -> bool:
         """Check if the model is a Gemini TTS model that returns PCM16 data."""
-        return "gemini" in model.lower() and ("tts" in model.lower() or "preview-tts" in model.lower())
+        return "gemini" in model.lower() and (
+            "tts" in model.lower() or "preview-tts" in model.lower()
+        )
 
-    def transform_response(self, model_response: "ModelResponse") -> "HttpxBinaryResponseContent":
+    def transform_response(
+        self, model_response: "ModelResponse"
+    ) -> "HttpxBinaryResponseContent":
         import base64
 
         import httpx

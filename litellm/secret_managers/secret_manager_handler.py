@@ -3,7 +3,6 @@ Secret Manager Handler
 
 Handles retrieving secrets from different secret management systems.
 """
-
 import base64
 import os
 from typing import Any, Optional
@@ -23,7 +22,7 @@ def _is_base64(s):
         return False
 
 
-def get_secret_from_manager(
+def get_secret_from_manager(  # noqa: PLR0915
     client: Any,
     key_manager: str,
     secret_name: str,
@@ -49,16 +48,20 @@ def get_secret_from_manager(
 
     if (
         key_manager == KeyManagementSystem.AZURE_KEY_VAULT.value
-        or type(client).__module__ + "." + type(client).__name__ == "azure.keyvault.secrets._client.SecretClient"
+        or type(client).__module__ + "." + type(client).__name__
+        == "azure.keyvault.secrets._client.SecretClient"
     ):  # support Azure Secret Client - from azure.keyvault.secrets import SecretClient
         secret = client.get_secret(secret_name).value
 
     elif (
-        key_manager == KeyManagementSystem.GOOGLE_KMS.value or client.__class__.__name__ == "KeyManagementServiceClient"
+        key_manager == KeyManagementSystem.GOOGLE_KMS.value
+        or client.__class__.__name__ == "KeyManagementServiceClient"
     ):
         encrypted_secret: Any = os.getenv(secret_name)
         if encrypted_secret is None:
-            raise ValueError("Google KMS requires the encrypted secret to be in the environment!")
+            raise ValueError(
+                "Google KMS requires the encrypted secret to be in the environment!"
+            )
         b64_flag = _is_base64(encrypted_secret)
         if b64_flag is True:  # if passed in as encoded b64 string
             encrypted_secret = base64.b64decode(encrypted_secret)
@@ -73,7 +76,9 @@ def get_secret_from_manager(
                 "ciphertext": ciphertext,
             }
         )
-        secret = response.plaintext.decode("utf-8")  # assumes the original value was encoded with utf-8
+        secret = response.plaintext.decode(
+            "utf-8"
+        )  # assumes the original value was encoded with utf-8
 
     elif key_manager == KeyManagementSystem.AWS_KMS.value:
         """
@@ -81,7 +86,9 @@ def get_secret_from_manager(
         """
         encrypted_value = os.getenv(secret_name, None)
         if encrypted_value is None:
-            raise Exception("AWS KMS - Encrypted Value of Key={} is None".format(secret_name))
+            raise Exception(
+                "AWS KMS - Encrypted Value of Key={} is None".format(secret_name)
+            )
         # Decode the base64 encoded ciphertext
         ciphertext_blob = base64.b64decode(encrypted_value)
 
@@ -110,14 +117,16 @@ def get_secret_from_manager(
                 secret_name=secret_name,
                 primary_secret_name=primary_secret_name,
             )
-            print_verbose(f"get_secret_value_response: [set={secret is not None}]")
+            print_verbose(f"get_secret_value_response: {secret}")
 
     elif key_manager == KeyManagementSystem.GOOGLE_SECRET_MANAGER.value:
         try:
             secret = client.get_secret_from_google_secret_manager(secret_name)
-            print_verbose(f"secret from google secret manager: [set={secret is not None}]")
+            print_verbose(f"secret from google secret manager:  {secret}")
             if secret is None:
-                raise ValueError(f"No secret found in Google Secret Manager for {secret_name}")
+                raise ValueError(
+                    f"No secret found in Google Secret Manager for {secret_name}"
+                )
         except Exception as e:
             print_verbose(f"An error occurred - {str(e)}")
             raise e
@@ -126,7 +135,9 @@ def get_secret_from_manager(
         try:
             secret = client.sync_read_secret(secret_name=secret_name)
             if secret is None:
-                raise ValueError(f"No secret found in Hashicorp Secret Manager for {secret_name}")
+                raise ValueError(
+                    f"No secret found in Hashicorp Secret Manager for {secret_name}"
+                )
         except Exception as e:
             print_verbose(f"An error occurred - {str(e)}")
             raise e
@@ -135,7 +146,9 @@ def get_secret_from_manager(
         try:
             secret = client.sync_read_secret(secret_name=secret_name)
             if secret is None:
-                raise ValueError(f"No secret found in CyberArk Secret Manager for {secret_name}")
+                raise ValueError(
+                    f"No secret found in CyberArk Secret Manager for {secret_name}"
+                )
         except Exception as e:
             print_verbose(f"An error occurred - {str(e)}")
             raise e
@@ -147,10 +160,14 @@ def get_secret_from_manager(
         if isinstance(client, CustomSecretManager):
             secret = client.sync_read_secret(
                 secret_name=secret_name,
-                optional_params=(key_management_settings.model_dump() if key_management_settings else None),
+                optional_params=key_management_settings.model_dump()
+                if key_management_settings
+                else None,
             )
             if secret is None:
-                raise ValueError(f"No secret found in Custom Secret Manager for {secret_name}")
+                raise ValueError(
+                    f"No secret found in Custom Secret Manager for {secret_name}"
+                )
         else:
             raise ValueError(
                 f"Custom secret manager client must be an instance of CustomSecretManager, got {type(client).__name__}"

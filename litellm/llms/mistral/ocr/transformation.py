@@ -1,8 +1,7 @@
 """
 Mistral OCR transformation implementation.
 """
-
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -14,8 +13,6 @@ from litellm.llms.base_llm.ocr.transformation import (
     OCRResponse,
 )
 from litellm.secret_managers.main import get_secret_str
-
-MISTRAL_OCR_API_KEY_ENV_VAR = "MISTRAL_API_KEY"
 
 
 class MistralOCRConfig(BaseOCRConfig):
@@ -39,13 +36,8 @@ class MistralOCRConfig(BaseOCRConfig):
         - image_min_size: Minimum size of images to include
         - bbox_annotation_format: Format for bounding box annotations
         - document_annotation_format: Format for document annotations
-        - document_annotation_prompt: Prompt for document annotation extraction
         - extract_header: Whether to extract document header
         - extract_footer: Whether to extract document footer
-        - table_format: Table output format ("markdown" or "html")
-        - confidence_scores_granularity: Confidence score level ("word" or "page")
-        - include_blocks: Whether to return paragraph-level bounding boxes and typed content blocks (OCR 4)
-        - id: Request identifier
         """
         return [
             "pages",
@@ -54,17 +46,9 @@ class MistralOCRConfig(BaseOCRConfig):
             "image_min_size",
             "bbox_annotation_format",
             "document_annotation_format",
-            "document_annotation_prompt",
             "extract_header",
             "extract_footer",
-            "table_format",
-            "confidence_scores_granularity",
-            "include_blocks",
-            "id",
         ]
-
-    def get_api_key_env_var(self) -> str | None:
-        return MISTRAL_OCR_API_KEY_ENV_VAR
 
     def map_ocr_params(
         self,
@@ -92,9 +76,9 @@ class MistralOCRConfig(BaseOCRConfig):
         self,
         headers: Dict,
         model: str,
-        api_key: str | None = None,
-        api_base: str | None = None,
-        litellm_params: dict | None = None,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        litellm_params: Optional[dict] = None,
         **kwargs,
     ) -> Dict:
         """
@@ -102,7 +86,7 @@ class MistralOCRConfig(BaseOCRConfig):
         """
         # Get API key from environment if not provided
         if api_key is None:
-            api_key = get_secret_str(MISTRAL_OCR_API_KEY_ENV_VAR)
+            api_key = get_secret_str("MISTRAL_API_KEY")
 
         if api_key is None:
             raise ValueError(
@@ -120,10 +104,10 @@ class MistralOCRConfig(BaseOCRConfig):
 
     def get_complete_url(
         self,
-        api_base: str | None,
+        api_base: Optional[str],
         model: str,
         optional_params: dict,
-        litellm_params: dict | None = None,
+        litellm_params: Optional[dict] = None,
         **kwargs,
     ) -> str:
         """

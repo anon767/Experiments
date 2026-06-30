@@ -4,7 +4,6 @@ from fastapi import HTTPException
 
 import litellm
 from litellm.proxy._types import CommonProxyErrors, InvitationNew, UserAPIKeyAuth
-from litellm.repositories.table_repositories import InvitationLinkRepository
 
 
 async def create_invitation_for_user(
@@ -26,7 +25,7 @@ async def create_invitation_for_user(
     expires_at = current_time + timedelta(days=7)
 
     try:
-        response = await InvitationLinkRepository(prisma_client).table.create(
+        response = await prisma_client.db.litellm_invitationlink.create(
             data={
                 "user_id": data.user_id,
                 "created_at": current_time,

@@ -21,7 +21,9 @@ if TYPE_CHECKING:
     from litellm.types.guardrails import Guardrail, LitellmParams
 
 
-def initialize_guardrail(litellm_params: "LitellmParams", guardrail: "Guardrail") -> CustomCodeGuardrail:
+def initialize_guardrail(
+    litellm_params: "LitellmParams", guardrail: "Guardrail"
+) -> CustomCodeGuardrail:
     """
     Initialize a custom code guardrail.
 
@@ -41,7 +43,9 @@ def initialize_guardrail(litellm_params: "LitellmParams", guardrail: "Guardrail"
     # Get the custom code from litellm_params
     custom_code = getattr(litellm_params, "custom_code", None)
     if not custom_code:
-        raise ValueError("Custom code guardrail requires 'custom_code' in litellm_params")
+        raise ValueError(
+            "Custom code guardrail requires 'custom_code' in litellm_params"
+        )
 
     custom_code_guardrail = CustomCodeGuardrail(
         guardrail_name=guardrail_name,

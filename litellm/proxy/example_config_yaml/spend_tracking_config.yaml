@@ -1,9 +1,9 @@
 model_list:
   - model_name: fake-openai-endpoint
     litellm_params:
-      model: openai/gpt-5-mini
+      model: openai/gpt-3.5-turbo
       api_key: fake-key
-      api_base: os.environ/FAKE_OPENAI_API_BASE
+      api_base: https://exampleopenaiendpoint-production.up.railway.app/
 
 general_settings:
   use_redis_transaction_buffer: true

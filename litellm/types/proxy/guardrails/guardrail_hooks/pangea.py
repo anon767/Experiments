@@ -16,7 +16,9 @@ class PangeaGuardrailConfigModelOptionalParams(BaseModel):
     )
 
 
-class PangeaGuardrailConfigModel(GuardrailConfigModel[PangeaGuardrailConfigModelOptionalParams]):
+class PangeaGuardrailConfigModel(
+    GuardrailConfigModel[PangeaGuardrailConfigModelOptionalParams]
+):
     api_key: Optional[str] = Field(
         default=None,
         description="The Pangea API key. Reads from PANGEA_API_KEY env var if None.",

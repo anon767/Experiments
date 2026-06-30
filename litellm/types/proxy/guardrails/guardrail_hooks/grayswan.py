@@ -42,7 +42,9 @@ class GraySwanGuardrailConfigModelOptionalParams(BaseModel):
     )
 
 
-class GraySwanGuardrailConfigModel(GuardrailConfigModel[GraySwanGuardrailConfigModelOptionalParams]):
+class GraySwanGuardrailConfigModel(
+    GuardrailConfigModel[GraySwanGuardrailConfigModelOptionalParams]
+):
     """Configuration parameters for the Gray Swan guardrail."""
 
     api_key: Optional[str] = Field(

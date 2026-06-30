@@ -50,7 +50,9 @@ class BlackForestLabsImageGenerationConfig(BaseImageGenerationConfig):
     This class only handles data transformation.
     """
 
-    def get_supported_openai_params(self, model: str) -> List[OpenAIImageGenerationOptionalParams]:
+    def get_supported_openai_params(
+        self, model: str
+    ) -> List[OpenAIImageGenerationOptionalParams]:
         """
         Return list of OpenAI params supported by Black Forest Labs.
 
@@ -134,7 +136,9 @@ class BlackForestLabsImageGenerationConfig(BaseImageGenerationConfig):
                 optional_params["width"] = width
                 optional_params["height"] = height
             except ValueError:
-                raise ValueError(f"Invalid size format: '{size}'. Expected format 'WIDTHxHEIGHT' (e.g., '1024x1024').")
+                raise ValueError(
+                    f"Invalid size format: '{size}'. Expected format 'WIDTHxHEIGHT' (e.g., '1024x1024')."
+                )
 
     def validate_environment(
         self,
@@ -152,7 +156,9 @@ class BlackForestLabsImageGenerationConfig(BaseImageGenerationConfig):
         BFL uses x-key header for authentication.
         """
         final_api_key: Optional[str] = (
-            api_key or get_secret_str("BFL_API_KEY") or get_secret_str("BLACK_FOREST_LABS_API_KEY")
+            api_key
+            or get_secret_str("BFL_API_KEY")
+            or get_secret_str("BLACK_FOREST_LABS_API_KEY")
         )
 
         if not final_api_key:

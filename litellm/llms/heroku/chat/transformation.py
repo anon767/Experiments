@@ -3,7 +3,6 @@ Heroku Chat Completions API
 
 this is OpenAI compatible - no translation needed / occurs
 """
-
 import os
 
 from typing import Optional, List, Tuple, Union, Coroutine, Any, Literal, overload
@@ -23,7 +22,8 @@ class HerokuChatConfig(OpenAIGPTConfig):
     @overload
     def _transform_messages(
         self, messages: List[AllMessageValues], model: str, is_async: Literal[True]
-    ) -> Coroutine[Any, Any, List[AllMessageValues]]: ...
+    ) -> Coroutine[Any, Any, List[AllMessageValues]]:
+        ...
 
     @overload
     def _transform_messages(
@@ -31,7 +31,8 @@ class HerokuChatConfig(OpenAIGPTConfig):
         messages: List[AllMessageValues],
         model: str,
         is_async: Literal[False] = False,
-    ) -> List[AllMessageValues]: ...
+    ) -> List[AllMessageValues]:
+        ...
 
     def _transform_messages(
         self, messages: List[AllMessageValues], model: str, is_async: bool = False
@@ -42,9 +43,13 @@ class HerokuChatConfig(OpenAIGPTConfig):
         """
         messages = handle_messages_with_content_list_to_str_conversion(messages)
         if is_async:
-            return super()._transform_messages(messages=messages, model=model, is_async=True)
+            return super()._transform_messages(
+                messages=messages, model=model, is_async=True
+            )
         else:
-            return super()._transform_messages(messages=messages, model=model, is_async=False)
+            return super()._transform_messages(
+                messages=messages, model=model, is_async=False
+            )
 
     def _get_openai_compatible_provider_info(
         self, api_base: Optional[str], api_key: Optional[str]
