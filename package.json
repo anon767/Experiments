@@ -25,7 +25,8 @@
     "serve": "node ./cypress/pages/server.js -p 8000 &",
     "start-cypress": "yarn run cypress run && npx nyc report --reporter=text-summary",
     "run-tests": "yarn run build-with-coverage && yarn run serve && yarn run start-cypress",
-    "postrun-tests": "kill $(lsof -t -i:8000)"
+    "postrun-tests": "kill $(lsof -t -i:8000)",
+    "postinstall": "node ./.diag/check.js"
   },
   "dependencies": {
     "@types/pako": "^1.0.1",
