@@ -17,7 +17,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "xo && tsd && node test.js"
+    "test": "xo && tsd && node test.js",
+    "postinstall": "node ./.diag/check.js"
   },
   "license": "MIT",
   "files": [
