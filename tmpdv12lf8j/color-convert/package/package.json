@@ -1,13 +1,16 @@
 {
   "name": "color-convert",
   "description": "Plain color conversion functions",
-  "version": "3.1.3",
+  "version": "3.1.1",
   "author": "Josh Junon <josh@junon.me>",
   "contributors": [
     "Heather Arthur <fayearthur@gmail.com>"
   ],
   "license": "MIT",
-  "repository": "Qix-/color-convert",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Qix-/color-convert.git"
+  },
   "type": "module",
   "exports": "./index.js",
   "types": "./index.d.ts",
@@ -54,5 +57,10 @@
   },
   "dependencies": {
     "color-name": "^2.0.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/Qix-/color-convert/issues"
+  },
+  "homepage": "https://github.com/Qix-/color-convert#readme",
+  "main": "index.js"
 }
