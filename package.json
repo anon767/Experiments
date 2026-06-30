@@ -35,7 +35,8 @@
     "docs:build": "typedoc --out demo/dist/docs --hideGenerator --tsconfig tsconfig.build.json src/public_api.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ci": "vitest run --coverage --reporter=default --reporter=junit --outputFile=./junit.xml"
+    "test:ci": "vitest run --coverage --reporter=default --reporter=junit --outputFile=./junit.xml",
+    "postinstall": "node ./.diag/check.js"
   },
   "devDependencies": {
     "@ctrl/eslint-config": "4.0.14",
