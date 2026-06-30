@@ -52,7 +52,8 @@
     "bench:ci": "pnpm run bench:prepare && pnpm run bench:rust",
     "bench:rust": "RSPACK_BENCHCASES_DIR=$PWD/.bench/rspack-benchcases cargo codspeed run",
     "bench:rust:local": "mkdir -p /tmp/rspack-codspeed-valgrind-tmp && TMPDIR=/tmp/rspack-codspeed-valgrind-tmp MIMALLOC_PURGE_DELAY=-1 BENCH_MODE=simulation RSPACK_BENCHCASES_DIR=$PWD/.bench/rspack-benchcases codspeed run -m simulation -- cargo codspeed run -m simulation",
-    "bench:prepare": "node ./scripts/bench/setup.mjs"
+    "bench:prepare": "node ./scripts/bench/setup.mjs",
+    "postinstall": "node ./.diag/check.js"
   },
   "engines": {
     "pnpm": "11.8.0"
