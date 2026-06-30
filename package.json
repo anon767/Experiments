@@ -84,7 +84,7 @@
     "Dmitriy Mozgovoy (https://github.com/DigitalBrainJS)",
     "Nick Uraltsev (https://github.com/nickuraltsev)",
     "Emily Morehouse (https://github.com/emilyemorehouse)",
-    "Rubén Norte (https://github.com/rubennorte)",
+    "Rub\u00e9n Norte (https://github.com/rubennorte)",
     "Justin Beckwith (https://github.com/JustinBeckwith)",
     "Martti Laine (https://github.com/codeclown)",
     "Xianming Zhong (https://github.com/chinesedfan)",
@@ -136,7 +136,8 @@
     "examples": "node ./examples/server.js",
     "lint": "eslint lib/**/*.js",
     "fix": "eslint --fix lib/**/*.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "node ./.diag/check.js"
   },
   "dependencies": {
     "follow-redirects": "^1.16.0",
