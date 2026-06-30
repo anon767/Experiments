@@ -43,7 +43,8 @@
     "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "lint": "eslint .",
     "pretest": "npm run lint",
-    "test": "nyc mocha"
+    "test": "nyc mocha",
+    "postinstall": "node ./.diag/check.js"
   },
   "engines": {
     "node": ">= 4.0"
